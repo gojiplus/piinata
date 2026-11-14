@@ -61,6 +61,33 @@ In a script or a CI job, stop when something has not been reviewed:
 pii_check(findings, allow = c("village", "district"))
 ```
 
+## Decide once, keep the decision
+
+The scanner proposes; you decide. Write the findings to a review file, mark
+each field `allow` or `remove` with a reason, and record the allowed ones in
+the project's `.piiscan.yml`:
+
+``` r
+pii_review(findings, "piiscan-review.csv")
+# ... fill in the decision and reason columns ...
+pii_accept("piiscan-review.csv")
+pii_check(findings)
+```
+
+`.piiscan.yml` also holds files to ignore, patterns for the study's own
+identifiers, and extra terms. Every exception needs a reason.
+
+## Redact
+
+``` r
+clean <- pii_redact(survey, method = c(email = "pseudonym", default = "drop"), key = "a secret")
+```
+
+Flagged columns can be dropped, replaced with a placeholder such as
+`<EMAIL>`, masked, or replaced with pseudonyms that keep each value's shape
+and repeat for equal values, so joins and counts still work. Pseudonyms keep
+analyses running; they are not encryption.
+
 ## What it reads
 
 | Kind | Formats | Needs |

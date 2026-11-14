@@ -1,10 +1,13 @@
-detect_name <- function(field, values) {
+detect_name <- function(field, values, extra = list()) {
   name <- field$name
   if (!is.na(name) && tolower(name) %in% names(platform_terms())) {
     type <- unname(platform_terms()[tolower(name)])
     return(list(finding(type, "name", "platform_field", NA, NA_real_, name, "high")))
   }
   terms <- name_terms()
+  for (type in names(extra)) {
+    terms[[type]] <- union(terms[[type]], extra[[type]])
+  }
   found <- list()
   sources <- c(name = name, label = field$label)
   for (part in names(sources)) {

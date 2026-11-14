@@ -11,7 +11,7 @@ pii_read_report(x)
 }
 \value{
 A tibble with one row per file: \code{source}, \code{status} (\code{read},
-\code{unsupported} or \code{failed}), the number of \code{fields} read and, when not
+\code{unsupported}, \code{failed} or \code{ignored}), the number of \code{fields} read and, when not
 read, the reason in \code{detail}. \code{NULL} if \code{x} did not come from files.
 }
 \description{

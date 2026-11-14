@@ -38,6 +38,7 @@ read_one <- function(path, registry) {
 #' kept as the field's `label`.
 #'
 #' @param path Files or directories. Directories are searched recursively.
+#' @param ignore Globs of files not to read. They are reported as `ignored`.
 #' @return A tibble of fields; see [as_pii_fields()].
 #' @export
 #' @examples
@@ -46,7 +47,7 @@ read_one <- function(path, registry) {
 #' fields <- pii_read(file)
 #' fields
 #' pii_read_report(fields)
-pii_read <- function(path) {
+pii_read <- function(path, ignore = character()) {
   if (!is.character(path) || length(path) == 0L) {
     cli::cli_abort("{.arg path} must be a character vector of files or directories.")
   }
@@ -60,7 +61,13 @@ pii_read <- function(path) {
   })))
   files <- unique(as.character(files))
   registry <- readers()
-  results <- lapply(files, read_one, registry = registry)
+  skipped <- matches_glob(files, ignore)
+  results <- lapply(seq_along(files), function(i) {
+    if (skipped[i]) {
+      return(list(fields = new_fields(), status = "ignored", detail = "listed under ignore"))
+    }
+    read_one(files[i], registry)
+  })
   fields <- do.call(rbind, c(list(new_fields()), lapply(results, `[[`, "fields")))
   attr(fields, "read_report") <- tibble::tibble(
     source = files,
@@ -75,7 +82,7 @@ pii_read <- function(path) {
 #'
 #' @param x The result of [pii_read()] or [pii_scan()].
 #' @return A tibble with one row per file: `source`, `status` (`read`,
-#'   `unsupported` or `failed`), the number of `fields` read and, when not
+#'   `unsupported`, `failed` or `ignored`), the number of `fields` read and, when not
 #'   read, the reason in `detail`. `NULL` if `x` did not come from files.
 #' @export
 #' @examples

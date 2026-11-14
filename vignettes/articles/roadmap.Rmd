@@ -43,14 +43,15 @@ remove.
 
 | Version | Contents | State |
 |---|---|---|
-| 0.0.0.9000 | spec, package, r-canon, reading layer, core detectors, `idcheck` hook-in, speed | done |
-| 0.1.0 | `.piiscan.yml` exceptions, custom patterns, file-name scanning | |
-| 0.2.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports | |
-| 0.3.0 | pre-commit hook and GitHub Action | |
-| 0.4.0 | optional backends: Presidio, `nametagger`; comparison vignette | |
-| 0.5.0 | phone validation on libphonenumber metadata | |
-| 0.6.0 | `pii_redact()` | |
-| 1.0.0 | CRAN submission, after `idcheck` is on CRAN | |
+| 0.0.0.9000 | reading layer, normalization, core detectors, `idcheck`, speed | done |
+| | `.piiscan.yml` exceptions, custom patterns, ignore globs, review and accept | done |
+| | `pii_redact()` for data frames: drop, placeholder, mask, pseudonym | done |
+| 0.1.0 | first CRAN release, after `idcheck` | |
+| 0.2.0 | redacting files in place of data frames; clean copy beside the original | |
+| 0.3.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports; file-name scanning | |
+| 0.4.0 | pre-commit hook and GitHub Action | |
+| 0.5.0 | optional backends: Presidio, `nametagger`; comparison vignette | |
+| 0.6.0 | phone validation on libphonenumber metadata; URL parts | |
 
 ## Open questions
 

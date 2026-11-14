@@ -4,7 +4,7 @@
 \alias{pii_check}
 \title{Stop if personal data remain}
 \usage{
-pii_check(findings, allow = character(), min_confidence = "medium")
+pii_check(findings, allow = character(), min_confidence = NULL, config = NULL)
 }
 \arguments{
 \item{findings}{The result of \code{\link[=pii_scan]{pii_scan()}}.}
@@ -12,8 +12,12 @@ pii_check(findings, allow = character(), min_confidence = "medium")
 \item{allow}{Field names or locators that have been reviewed and may stay.}
 
 \item{min_confidence}{The weakest findings that stop the check: \code{"low"},
-\code{"medium"} or \code{"high"}. Low-confidence findings, such as text that merely
-looks like names, are for reading, not for gating.}
+\code{"medium"} or \code{"high"}; \code{"medium"} unless the configuration says
+otherwise. Low-confidence findings, such as text that merely looks like
+names, are for reading, not for gating.}
+
+\item{config}{The project's configuration, from \code{\link[=pii_config]{pii_config()}}. By default
+the one the scan used. Its \code{allow} entries count as reviewed.}
 }
 \value{
 \code{findings}, invisibly, when nothing unallowed remains.

@@ -55,7 +55,10 @@ A scan is four stages, each in its own files, each replaceable:
 | detect | name, value and structure evidence, one function each | `R/terms.R`, `R/detect-name.R`, `R/detect-value.R` |
 | report | findings, summary, the check that gates a script | `R/findings.R`, `R/scan.R`, `R/report.R` |
 
-A fifth stage, redact, comes later and consumes findings.
+Two more stages act on findings: decide (`R/config.R`, `R/review.R`), where a
+person allows or removes each flagged field and the decision is recorded in
+`.piiscan.yml`, and redact (`R/redact.R`), which drops, masks or pseudonymizes
+what was flagged.
 
 Normalization exists because real exports are dirty. It applies Unicode
 compatibility normalization, turns decimal digits of any script into ASCII

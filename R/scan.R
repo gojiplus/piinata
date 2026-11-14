@@ -18,16 +18,20 @@ distinct_values <- function(field, sample) {
   list(values = distinct, weight = weight)
 }
 
-scan_field <- function(field, show_values, sample) {
+scan_field <- function(field, show_values, sample, config) {
   observed <- distinct_values(field, sample)
-  named <- detect_name(field, observed$values)
+  named <- detect_name(field, observed$values, config$terms)
   if (name_contradicted(field, observed)) {
     # Places repeat across respondents, so few distinct values say nothing there.
     named <- lapply(named, function(f) {
       if (f$type %in% c("location", "coordinates")) f else replace(f, "confidence", "low")
     })
   }
-  found <- c(named, detect_values(field, observed$values, observed$weight))
+  found <- c(
+    named,
+    detect_values(field, observed$values, observed$weight),
+    detect_custom(field, observed$values, observed$weight, config$patterns)
+  )
   if (length(found) == 0L) {
     return(empty_findings())
   }
@@ -67,10 +71,12 @@ scan_field <- function(field, show_values, sample) {
 #'   [as_pii_fields()].
 #' @param show_values If `FALSE`, the default, example values in the result
 #'   are masked so the report does not itself leak.
-#' @param sample The most distinct values examined in one table column. A column
-#'   with more is judged from an evenly spaced subset, and `n` then counts
-#'   matches within that subset. Use `Inf` to examine every value. Running text
-#'   is always examined in full.
+#' @param sample The most distinct values examined in one table column; 10,000
+#'   unless the configuration says otherwise. A column with more is judged from
+#'   an evenly spaced subset, and `n` then counts matches within that subset.
+#'   Use `Inf` to examine every value. Running text is always examined in full.
+#' @param config The project's configuration, from [pii_config()]: files to
+#'   ignore, custom patterns and extra terms.
 #' @return A tibble with one row per finding: `source`, `locator`, `name`,
 #'   `label`, `type`, `evidence` (`name`, `value` or `structure`), `detector`,
 #'   `n` and `share` of matching values, `examples` and `confidence`.
@@ -81,20 +87,24 @@ scan_field <- function(field, show_values, sample) {
 #'   reason = rep(c("work", "family"), 10)
 #' )
 #' pii_scan(survey)
-pii_scan <- function(x, show_values = FALSE, sample = 10000) {
+pii_scan <- function(x, show_values = FALSE, sample = NULL, config = pii_config()) {
+  if (is.null(sample)) {
+    sample <- if (is.null(config$sample)) 10000 else config$sample
+  }
   if (is.data.frame(x) && all(c("source", "locator", "values", "kind") %in% names(x))) {
     fields <- x
   } else if (is.data.frame(x)) {
     fields <- as_pii_fields(x)
   } else if (is.character(x)) {
-    fields <- pii_read(x)
+    fields <- pii_read(x, ignore = config$ignore)
   } else {
     cli::cli_abort("{.arg x} must be paths, a data frame or fields, not {.obj_type_friendly {x}}.")
   }
   rows <- lapply(seq_len(nrow(fields)), function(i) {
-    scan_field(fields[i, ], show_values, sample)
+    scan_field(fields[i, ], show_values, sample, config)
   })
   findings <- do.call(rbind, c(list(empty_findings()), rows))
   attr(findings, "read_report") <- pii_read_report(fields)
+  attr(findings, "config") <- config
   findings
 }

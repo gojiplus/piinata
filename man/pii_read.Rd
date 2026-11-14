@@ -4,10 +4,12 @@
 \alias{pii_read}
 \title{Read files into fields}
 \usage{
-pii_read(path)
+pii_read(path, ignore = character())
 }
 \arguments{
 \item{path}{Files or directories. Directories are searched recursively.}
+
+\item{ignore}{Globs of files not to read. They are reported as \code{ignored}.}
 }
 \value{
 A tibble of fields; see \code{\link[=as_pii_fields]{as_pii_fields()}}.

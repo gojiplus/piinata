@@ -9,6 +9,15 @@ reference:
       - pii_scan
       - pii_summary
       - pii_check
+  - title: Decide
+    desc: Review what was found and record the decisions with the project.
+    contents:
+      - pii_review
+      - pii_config
+  - title: Redact
+    desc: Remove or replace what was flagged.
+    contents:
+      - pii_redact
   - title: Read
     desc: Turn files and objects into fields, and account for every file.
     contents:

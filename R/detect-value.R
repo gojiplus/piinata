@@ -37,7 +37,10 @@ detect_patterns <- function(values, weight, free, types = c("email", "phone", "i
     hit <- matched(values, type)
     n <- sum(weight[!is.na(hit)])
     if (n >= threshold) {
-      confidence <- if (type == "phone") "low" else "high"
+      # A phone-like number is unvalidated, so it is only weak evidence unless
+      # it fills the column or sits in running text, where digits are deliberate.
+      weak <- type == "phone" && !free && n / total < 0.8
+      confidence <- if (weak) "low" else if (type == "phone") "medium" else "high"
       examples <- hit[!is.na(hit)]
       found <- c(found, list(finding(type, "value", type, n, n / total, examples, confidence)))
     }
@@ -124,7 +127,8 @@ detect_values <- function(field, values, weight) {
   words <- stringr::str_count(values, "\\S+")
   wordy <- stats::weighted.mean(words, weight) >= 5
   free <- field$kind == "text" || (wordy && distinct >= 0.3)
-  found <- detect_patterns(values, weight, free)
+  # Sentences are searched match by match even when most rows repeat a stock answer.
+  found <- detect_patterns(values, weight, free || wordy)
   if (field$kind == "text") {
     return(found)
   }

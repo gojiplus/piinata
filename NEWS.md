@@ -12,3 +12,8 @@
 * Identity numbers are validated when the 'idcheck' package is installed.
 * `pii_check()` gains `min_confidence`; low-confidence findings no longer stop
   it by default.
+* `pii_config()` reads a project's `.piiscan.yml`: reviewed exceptions with
+  reasons, files to ignore, custom patterns and extra terms.
+* `pii_review()` and `pii_accept()` write findings for a person to decide on
+  and record the decisions.
+* `pii_redact()` drops, masks, replaces or pseudonymizes flagged columns.

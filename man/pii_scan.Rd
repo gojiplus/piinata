@@ -4,7 +4,7 @@
 \alias{pii_scan}
 \title{Scan for likely personal data}
 \usage{
-pii_scan(x, show_values = FALSE, sample = 10000)
+pii_scan(x, show_values = FALSE, sample = NULL, config = pii_config())
 }
 \arguments{
 \item{x}{Files or directories, a data frame, or fields from \code{\link[=pii_read]{pii_read()}} or
@@ -13,10 +13,13 @@ pii_scan(x, show_values = FALSE, sample = 10000)
 \item{show_values}{If \code{FALSE}, the default, example values in the result
 are masked so the report does not itself leak.}
 
-\item{sample}{The most distinct values examined in one table column. A column
-with more is judged from an evenly spaced subset, and \code{n} then counts
-matches within that subset. Use \code{Inf} to examine every value. Running text
-is always examined in full.}
+\item{sample}{The most distinct values examined in one table column; 10,000
+unless the configuration says otherwise. A column with more is judged from
+an evenly spaced subset, and \code{n} then counts matches within that subset.
+Use \code{Inf} to examine every value. Running text is always examined in full.}
+
+\item{config}{The project's configuration, from \code{\link[=pii_config]{pii_config()}}: files to
+ignore, custom patterns and extra terms.}
 }
 \value{
 A tibble with one row per finding: \code{source}, \code{locator}, \code{name},

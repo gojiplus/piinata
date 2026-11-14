@@ -35,28 +35,40 @@ pii_summary <- function(findings) {
 #' @param findings The result of [pii_scan()].
 #' @param allow Field names or locators that have been reviewed and may stay.
 #' @param min_confidence The weakest findings that stop the check: `"low"`,
-#'   `"medium"` or `"high"`. Low-confidence findings, such as text that merely
-#'   looks like names, are for reading, not for gating.
+#'   `"medium"` or `"high"`; `"medium"` unless the configuration says
+#'   otherwise. Low-confidence findings, such as text that merely looks like
+#'   names, are for reading, not for gating.
+#' @param config The project's configuration, from [pii_config()]. By default
+#'   the one the scan used. Its `allow` entries count as reviewed.
 #' @return `findings`, invisibly, when nothing unallowed remains.
 #' @export
 #' @examples
 #' findings <- pii_scan(data.frame(village = rep(c("A", "B"), 10)))
 #' pii_check(findings, allow = "village")
-pii_check <- function(findings, allow = character(), min_confidence = "medium") {
+pii_check <- function(findings, allow = character(), min_confidence = NULL, config = NULL) {
+  if (is.null(config)) {
+    config <- attr(findings, "config", exact = TRUE)
+    config <- if (is.null(config)) pii_config() else config
+  }
+  if (is.null(min_confidence)) {
+    min_confidence <- if (is.null(config$min_confidence)) "medium" else config$min_confidence
+  }
   report <- pii_read_report(findings)
-  unread <- if (is.null(report)) character() else report$source[report$status != "read"]
+  unread <- report$source[report$status %in% c("unsupported", "failed")]
   if (length(unread) > 0L) {
     cli::cli_abort(c("Could not read {length(unread)} file{?s}.", "x" = "{.file {unread}}"))
   }
   levels <- c("low", "medium", "high")
   min_confidence <- rlang::arg_match(min_confidence, levels)
   graded <- match(findings$confidence, levels) >= match(min_confidence, levels)
-  open <- findings[graded & !(findings$name %in% allow | findings$locator %in% allow), ]
+  allowed <- findings$name %in% allow | findings$locator %in% allow |
+    allowed_by(findings, config$allow)
+  open <- findings[graded & !allowed, ]
   if (nrow(open) > 0L) {
     cli::cli_abort(c(
       "Found possible personal data in {length(unique(open$locator))} field{?s}.",
       "x" = "{.val {unique(open$locator)}}",
-      "i" = "Review them, then remove them or pass them to {.arg allow}."
+      "i" = "Review them with {.code pii_review()}, then remove them or record them as allowed."
     ))
   }
   invisible(findings)
