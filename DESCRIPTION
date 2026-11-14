@@ -1,0 +1,43 @@
+Package: piiscan
+Title: Find Personal Data in Research Files
+Version: 0.0.0.9000
+Authors@R: 
+    person("Gaurav", "Sood", , "gsood07@gmail.com", role = c("aut", "cre", "cph"))
+Description: Scans survey exports, statistical data files, spreadsheets
+    and text documents for likely personal data such as names, phone
+    numbers, email addresses, dates of birth and locations. Every file is
+    first read with an established reader and accounted for as read,
+    unsupported or failed. Findings report where the data are and the
+    evidence: what a field is called, what it contains, or how it behaves.
+    The package reports; it does not anonymize.
+License: MIT + file LICENSE
+URL: https://gojiplus.github.io/piiscan/,
+    https://github.com/gojiplus/piiscan
+BugReports: https://github.com/gojiplus/piiscan/issues
+Encoding: UTF-8
+Language: en-US
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Suggests: 
+    jsonlite,
+    nanoparquet,
+    officer,
+    pdftools,
+    qualtRics,
+    rvest,
+    striprtf,
+    testthat (>= 3.0.0),
+    withr,
+    writexl
+Config/testthat/edition: 3
+Imports: 
+    cli,
+    fs,
+    haven,
+    ipaddress,
+    lubridate,
+    readr,
+    readxl,
+    rlang,
+    stringr,
+    tibble

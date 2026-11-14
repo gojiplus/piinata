@@ -1,7 +1,8 @@
 # piiscan: specification
 
-Status: draft 1, 2026-11-14. Nothing is built yet. This file is the contract the
-first versions are checked against; it changes by pull request.
+Status: draft 2, 2026-11-14. The reading layer and the core detectors exist and
+pass the tabular benchmark. This file is the contract versions are checked
+against; it changes by pull request.
 
 ## Problem
 
@@ -64,26 +65,33 @@ A table gives one field per column. A document gives one field per page or
 paragraph block. Detectors only ever see fields, so a detector written once
 works on a Stata file, a PDF and a data frame alike.
 
-Readers, all existing packages:
+Readers are the tidyverse and r-lib packages social scientists already use:
 
 | Input | Reader | Notes |
 |---|---|---|
-| csv, tsv, psv, fwf | `rio::import()` | |
-| xlsx, xls, ods | `rio::import_list()` | every sheet |
-| dta, sav, por, sas7bdat, xpt | `rio` via `haven` | variable and value labels kept |
-| parquet, feather | `rio` via `nanoparquet` / `arrow` | |
-| json, ndjson | `rio` via `jsonlite` | |
-| rds, rda | `rio` | data frames and character vectors only |
-| txt and other plain text | `readtext::readtext()` | |
-| pdf | `readtext` via `pdftools` | text layer only; scanned pages are reported as unread |
-| docx, doc, rtf | `readtext` via `antiword`, `striprtf` | |
-| html, xml | `readtext` | |
-| Qualtrics csv/tsv export | `qualtRics::read_survey()` | question text becomes the label; platform fields are known |
+| csv, tsv, psv | `readr` | everything read as text |
+| xlsx, xls | `readxl` | every sheet |
+| dta, sav, zsav, por, sas7bdat, xpt | `haven` | variable and value labels kept |
+| rds | base R | data frames and character vectors only |
+| txt, md, log, do, R, tex and similar | `readr::read_lines()` | scripts and logs can list rows of data |
+| Qualtrics csv/tsv export | `qualtRics::read_survey()` | detected from its `ImportId` row; question text becomes the label |
+| parquet | `nanoparquet` | |
+| json, jsonl, ndjson | `jsonlite` | tabular JSON as a table, otherwise as text |
+| pdf | `pdftools` | text layer only; a scan is reported as unsupported |
+| docx | `officer` | |
+| rtf | `striprtf` | |
+| html | `rvest` | |
 | data frame, character vector | none | passed straight through |
 
-`rio` and `readtext` are imports; format-specific packages they need are
-suggested and checked at run time. A missing suggested package produces an
-"unsupported: install X" row in the read report, not an error.
+`readr`, `readxl` and `haven` are imports. The rest are suggested and checked
+at run time: a missing package produces an "unsupported: install X" row in the
+read report, not an error.
+
+Still to read, in the order social scientists meet them: SurveyCTO and
+KoboToolbox/ODK exports (repeat groups, media file names), REDCap exports with
+their data dictionary, SurveyMonkey and Google Forms headers, ods, doc, Stata
+logs in smcl, and the file names themselves, which often carry a respondent's
+name.
 
 Not in the first release: images and scanned PDFs (would use `tesseract`),
 email archives, databases, live survey-platform APIs (`rsurveycto`,
@@ -95,13 +103,12 @@ A detector is a function from a field to zero or more findings. The core set:
 
 | Evidence | Detector | Built on |
 |---|---|---|
-| name | terms for names, contact, birth, location, identifiers, relatives, in English, Hindi (transliterated), Spanish, French; matched on whole tokens after splitting `snake_case`, `camelCase` and digits | `stringi` |
+| name | terms for names, contact, birth, location, identifiers, relatives, in English with some Spanish, French and Hindi; matched on whole tokens after splitting `snake_case`, `camelCase` and digits | `stringr` |
 | name | platform fields: Qualtrics (`IPAddress`, `RecipientEmail`, `LocationLatitude` ...), SurveyCTO (`deviceid`, `subscriberid`, `devicephonenum` ...) | fixed lists |
-| value | email address | `stringi` regex, ICU |
-| value | URL, IP address | `ipaddress` for validation |
-| value | date of birth: parseable dates in a plausible birth range | `anytime` |
+| value | email address | `stringr` |
+| value | IP address | `ipaddress` for validation |
+| value | date of birth: parseable dates in a plausible birth range | `lubridate` |
 | value | coordinates: numeric latitude/longitude pairs in range | base R |
-| value | card-like numbers passing the Luhn check | `checkLuhn` |
 | value | phone numbers | see open questions |
 | structure | identifier-like: nearly all values distinct | base R |
 | structure | free text: long, varied strings; value detectors then run cell by cell | base R |
@@ -164,8 +171,7 @@ at `@v2`, the canonical `.lintr`, testthat edition 3, roxygen2, pkgdown
 published by Actions, `NEWS.md`, semantic versions matching tags. Scaffolding
 by `usethis`. Release by `usethis::use_release_issue()`.
 
-License: MIT. `rio`, `readtext` and `checkLuhn` are GPL; importing them from an
-MIT package is common on CRAN, and is to be confirmed before submission.
+License: MIT. Every import is MIT, Apache or similarly permissive.
 
 ## Milestones
 
@@ -188,14 +194,14 @@ MIT package is common on CRAN, and is to be confirmed before submission.
 
 ## Open questions
 
-1. **Phone numbers in the core.** No maintained, Java-free libphonenumber
-   exists on CRAN: `dialvalidator` was archived on 2026-03-30 and `dialr`
-   (2023) needs Java. Proposal: the core flags digit strings of plausible
-   length as `phone`, confidence low, labelled unvalidated; validation comes
-   from `use_dialr()` or `use_presidio()`.
-2. **National ids in the core.** Aadhaar needs the Verhoeff checksum, for
-   which there is no CRAN package. Proposal: leave country ids to Presidio in
-   the first release rather than write checksums here.
+1. **Phone numbers.** No maintained, Java-free libphonenumber exists on CRAN:
+   `dialvalidator` was archived on 2026-03-30 and `dialr` (2023) needs Java.
+   The core flags digit strings of 10 to 13 digits as `phone`, confidence
+   low. Decided: build our own validator on Google's libphonenumber metadata
+   (Apache-2.0), credited, likely in the sister package below.
+2. **National ids.** Decided: a sister package validates identity numbers
+   (Aadhaar's Verhoeff checksum, PAN, GSTIN and others) in C++; piiscan will
+   suggest it and use it when installed.
 3. **Person names in values.** Without a model, the core can only say "short,
    capitalized, mostly distinct strings", confidence low. Proposal: that, plus
    `use_nametagger()` as the no-Python upgrade.
