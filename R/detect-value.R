@@ -38,8 +38,9 @@ detect_patterns <- function(values, weight, free, types = c("email", "phone", "i
     n <- sum(weight[!is.na(hit)])
     if (n >= threshold) {
       # A phone-like number is unvalidated, so it is only weak evidence unless
-      # it fills the column or sits in running text, where digits are deliberate.
-      weak <- type == "phone" && !free && n / total < 0.8
+      # it fills the column or sits inside longer text, where digits are deliberate.
+      embedded <- sum(weight[!is.na(hit) & nchar(values) > nchar(hit) + 4L]) > n / 2
+      weak <- type == "phone" && !free && !embedded && n / total < 0.8
       confidence <- if (weak) "low" else if (type == "phone") "medium" else "high"
       examples <- hit[!is.na(hit)]
       found <- c(found, list(finding(type, "value", type, n, n / total, examples, confidence)))
