@@ -19,6 +19,7 @@ Language: en-US
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
 Suggests: 
+    idcheck,
     jsonlite,
     nanoparquet,
     officer,
@@ -39,5 +40,6 @@ Imports:
     readr,
     readxl,
     rlang,
+    stringi,
     stringr,
     tibble

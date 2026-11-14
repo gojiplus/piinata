@@ -7,3 +7,8 @@
   values, and from how a field behaves.
 * `pii_summary()` gives one row per flagged field; `pii_check()` stops a script
   when something has not been reviewed.
+* The scan works on distinct values, uses column types, and by default examines
+  at most 10,000 distinct values per column (`sample`).
+* Identity numbers are validated when the 'idcheck' package is installed.
+* `pii_check()` gains `min_confidence`; low-confidence findings no longer stop
+  it by default.

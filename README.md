@@ -87,6 +87,8 @@ reported as unsupported, with the package to install.
   birth, coordinates and person names.
 - **Behavior:** free-text answers, and text that is different on nearly every
   row.
+- **Identity numbers:** Aadhaar, GSTIN, PAN and others, when the
+  [idcheck](https://github.com/gojiplus/idcheck) package is installed.
 
 [SPEC.md](SPEC.md) has the design, the benchmark it is held to, and what is
 out of scope.

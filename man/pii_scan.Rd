@@ -4,7 +4,7 @@
 \alias{pii_scan}
 \title{Scan for likely personal data}
 \usage{
-pii_scan(x, show_values = FALSE)
+pii_scan(x, show_values = FALSE, sample = 10000)
 }
 \arguments{
 \item{x}{Files or directories, a data frame, or fields from \code{\link[=pii_read]{pii_read()}} or
@@ -12,6 +12,11 @@ pii_scan(x, show_values = FALSE)
 
 \item{show_values}{If \code{FALSE}, the default, example values in the result
 are masked so the report does not itself leak.}
+
+\item{sample}{The most distinct values examined in one table column. A column
+with more is judged from an evenly spaced subset, and \code{n} then counts
+matches within that subset. Use \code{Inf} to examine every value. Running text
+is always examined in full.}
 }
 \value{
 A tibble with one row per finding: \code{source}, \code{locator}, \code{name},
@@ -28,6 +33,10 @@ row). Each finding says which kind of evidence it rests on.
 \details{
 In a table column a value pattern must match at least 5 values and 5\% of
 them; in free text and documents a single match is reported.
+
+The scan works on the distinct values of each column and uses the column's
+type, so numeric, date and logical columns skip the text patterns and a
+coded column costs little however many rows it has.
 
 The result is a list of things to review. An empty result does not show
 that the data are safe to share.

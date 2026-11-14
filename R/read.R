@@ -1,5 +1,10 @@
 read_one <- function(path, registry) {
-  extension <- tolower(fs::path_ext(path))
+  # readr reads compressed delimited files directly, so "survey.csv.gz" is a csv.
+  packed <- tolower(fs::path_ext(path)) %in% c("gz", "bz2", "xz", "zip")
+  extension <- tolower(fs::path_ext(if (packed) fs::path_ext_remove(path) else path))
+  if (packed && !extension %in% c("csv", "tsv", "tab", "psv")) {
+    extension <- "compressed"
+  }
   reader <- registry[[extension]]
   if (is.null(reader)) {
     detail <- "no reader for this file type"

@@ -97,3 +97,14 @@ test_that("every file is accounted for", {
 test_that("a missing path is an error, not an empty scan", {
   expect_error(pii_read("no/such/file.csv"), "Cannot find")
 })
+
+test_that("compressed delimited files and R workspaces are read", {
+  dir <- withr::local_tempdir()
+  data <- survey()
+  readr::write_csv(data, file.path(dir, "s.csv.gz"))
+  save(data, file = file.path(dir, "s.RData"))
+  expect_equal(found_in(file.path(dir, "s.csv.gz")), sort(personal))
+  expect_equal(found_in(file.path(dir, "s.RData")), sort(personal))
+  writeLines("x", file.path(dir, "notes.txt.gz"))
+  expect_equal(pii_read_report(pii_read(file.path(dir, "notes.txt.gz")))$status, "unsupported")
+})

@@ -7,15 +7,15 @@ test_that("values give a column away when its name does not", {
   findings <- pii_scan(survey())
   by_value <- findings[findings$evidence == "value", ]
   expect_equal(by_value$type[by_value$name == "q12"], "email")
-  expect_equal(by_value$type[by_value$name == "q13"], "phone")
+  expect_true("phone" %in% by_value$type[by_value$name == "q13"])
   expect_equal(by_value$type[by_value$name == "q15"], "person_name")
 })
 
 test_that("names match on whole words only", {
   traps <- data.frame(reason = 1:30, season = 1:30, latrine = 1:30, relation = 1:30)
   expect_equal(nrow(pii_scan(traps)), 0L)
-  expect_equal(pii_scan(data.frame(firstName = 1:30))$type, "person_name")
-  expect_equal(pii_scan(data.frame(GPS_Lat = 1:30))$type, "coordinates")
+  expect_equal(pii_scan(data.frame(firstName = paste("Resp", 1:30)))$type[1], "person_name")
+  expect_equal(pii_scan(data.frame(GPS_Lat = 26 + (1:30) / 1000))$type, "coordinates")
 })
 
 test_that("a stray match in a coded column is not a finding", {
@@ -55,7 +55,7 @@ test_that("the summary has one row per flagged field", {
 })
 
 test_that("the check stops on unreviewed findings and passes once allowed", {
-  findings <- pii_scan(data.frame(village = rep(c("A", "B"), 15)))
+  findings <- pii_scan(data.frame(village = paste("Village", 1:30)))
   expect_error(pii_check(findings), "possible personal data")
   expect_invisible(pii_check(findings, allow = "village"))
 })
@@ -63,4 +63,65 @@ test_that("the check stops on unreviewed findings and passes once allowed", {
 test_that("timestamps are not reported for being distinct", {
   stamps <- format(as.POSIXct("2026-01-05 09:00:00", tz = "UTC") + 61 * 1:30)
   expect_equal(nrow(pii_scan(data.frame(submitted = stamps))), 0L)
+})
+
+test_that("large columns are judged from distinct values within the sample", {
+  codes <- data.frame(q1 = rep(c("yes", "no"), 5e4), q2 = paste0("p", 1:1e5, "@example.org"))
+  elapsed <- system.time(findings <- pii_scan(codes, sample = 500))[["elapsed"]]
+  expect_equal(findings$name, "q2")
+  expect_equal(findings$n, 500L)
+  expect_lt(elapsed, 5)
+  expect_equal(pii_scan(codes, sample = Inf)$n, 100000L)
+})
+
+test_that("long strings that are not dates are not sent to the date parser", {
+  keys <- data.frame(event = paste0("General Election|JAN-MAR 2020|block ", 1:5000))
+  expect_lt(system.time(pii_scan(keys))[["elapsed"]], 5)
+})
+
+test_that("column types decide which checks run", {
+  typed <- data.frame(flag = rep(c(TRUE, FALSE), 15), born = as.Date("1980-01-01") + 1:30)
+  findings <- pii_scan(typed)
+  expect_equal(unique(findings$name), "born")
+  expect_true("birth_date" %in% findings$detector)
+})
+
+test_that("a name of a place or thing is not a person's name", {
+  places <- data.frame(name_of_gram_panchayat = 1:30, survey_name = 1:30, school_name = 1:30)
+  expect_equal(nrow(pii_scan(places)), 0L)
+  expect_equal(pii_scan(data.frame(candidate_name = paste("Resp", 1:30)))$type[1], "person_name")
+})
+
+test_that("keys and precise numbers are not findings", {
+  keys <- data.frame(
+    match_key = paste0("ajmer_arain_gp", 1:40),
+    log_assets = sprintf("%.6f", log(1000 + 1:40))
+  )
+  expect_equal(nrow(pii_scan(keys)), 0L)
+})
+
+test_that("low-confidence findings do not stop the check unless asked", {
+  people <- data.frame(q2 = paste(c("Asha", "Ravi", "Meena", "Imran"), c("Devi", "Khan", "Rao")))
+  findings <- pii_scan(people[rep(1:12, 3), , drop = FALSE])
+  expect_equal(findings$confidence, "low")
+  expect_invisible(pii_check(findings))
+  expect_error(pii_check(findings, min_confidence = "low"), "possible personal data")
+})
+
+test_that("a suggestive name on a column of codes is weak evidence", {
+  flags <- data.frame(phone_answered = rep(c("yes", "no"), 15), has_email = rep(0:1, 15))
+  expect_equal(unique(pii_scan(flags)$confidence), "low")
+  numbers <- data.frame(phone = sprintf("98765%05d", 1:30))
+  expect_true("medium" %in% pii_scan(numbers)$confidence)
+})
+
+test_that("identity numbers with a valid checksum are strong evidence", {
+  skip_if_not_installed("idcheck")
+  body <- sprintf("%011.0f", 20000000000 + 7919 * 1:30)
+  aadhaar <- paste0(body, idcheck::id_verhoeff_digit(body))
+  findings <- pii_scan(data.frame(q8 = aadhaar))
+  expect_true("in_aadhaar" %in% findings$type)
+  expect_equal(findings$confidence[findings$type == "in_aadhaar"], "high")
+  random <- pii_scan(data.frame(q8 = sprintf("%012.0f", 2e11 + 104729 * 1:30)))
+  expect_false("in_aadhaar" %in% random$type)
 })

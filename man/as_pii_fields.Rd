@@ -12,8 +12,8 @@ as_pii_fields(x, source = "data")
 \item{source}{A name for \code{x}, used in the \code{source} column of the result.}
 }
 \value{
-A tibble with columns \code{source}, \code{locator}, \code{name}, \code{label}, \code{values}
-and \code{kind}.
+A tibble with columns \code{source}, \code{locator}, \code{name}, \code{label}, \code{values},
+\code{kind} (\code{tabular} or \code{text}) and the column's storage \code{type}.
 }
 \description{
 \code{pii_scan()} works on fields: one row per column of a table, or per block of

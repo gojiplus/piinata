@@ -58,6 +58,19 @@ platform_bookkeeping <- function() {
   )
 }
 
+# "name" beside one of these names a place or a thing, not a person.
+not_a_person <- function() {
+  c(
+    "village", "gram", "panchayat", "panchyat", "samiti", "block", "district", "state", "ward",
+    "tehsil", "taluk", "mandal", "city", "town", "country", "region", "province", "county",
+    "school", "college", "hospital", "clinic", "bank", "branch", "company", "firm", "employer",
+    "organization", "organisation", "ngo", "party", "scheme", "program", "programme", "project",
+    "survey", "file", "variable", "var", "crop", "product", "brand", "item", "form", "unique",
+    "flag", "count", "length", "match", "standardized", "std", "constituency", "seat", "gp",
+    "dist", "subdistrict", "score", "translate", "code", "id", "type", "category"
+  )
+}
+
 tokens <- function(x) {
   x <- stringr::str_replace_all(x, "(?<=[a-z])(?=[A-Z])", " ")
   parts <- stringr::str_split(tolower(x), "[^\\p{L}]+")[[1]]

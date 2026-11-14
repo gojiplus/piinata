@@ -1,9 +1,24 @@
 new_fields <- function(source = character(), locator = character(), name = character(),
-                       label = character(), values = list(), kind = character()) {
+                       label = character(), values = list(), kind = character(),
+                       type = rep("character", length(source))) {
   tibble::tibble(
     source = source, locator = locator, name = name, label = label,
-    values = values, kind = kind
+    values = values, kind = kind, type = type
   )
+}
+
+storage_type <- function(x) {
+  if (haven::is.labelled(x) || is.factor(x)) {
+    "character"
+  } else if (inherits(x, c("Date", "POSIXt"))) {
+    "date"
+  } else if (is.logical(x)) {
+    "logical"
+  } else if (is.numeric(x)) {
+    "numeric"
+  } else {
+    "character"
+  }
 }
 
 as_text <- function(x) {
@@ -28,7 +43,8 @@ fields_from_table <- function(data, source, sheet = NULL) {
   new_fields(
     source = rep(source, ncol(data)), locator = locator, name = names(data),
     label = unname(labels), values = unname(lapply(data, as_text)),
-    kind = rep("tabular", ncol(data))
+    kind = rep("tabular", ncol(data)),
+    type = unname(vapply(data, storage_type, character(1)))
   )
 }
 
@@ -49,8 +65,8 @@ fields_from_text <- function(text, source, locator = "text") {
 #'
 #' @param x A data frame, or a character vector of text.
 #' @param source A name for `x`, used in the `source` column of the result.
-#' @return A tibble with columns `source`, `locator`, `name`, `label`, `values`
-#'   and `kind`.
+#' @return A tibble with columns `source`, `locator`, `name`, `label`, `values`,
+#'   `kind` (`tabular` or `text`) and the column's storage `type`.
 #' @export
 #' @examples
 #' as_pii_fields(data.frame(q1 = c("a@example.org", "b@example.org")))

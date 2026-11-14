@@ -70,6 +70,16 @@ read_rds_file <- function(path) {
   rlang::abort("holds neither a data frame nor text", class = "piiscan_unsupported")
 }
 
+read_rdata_file <- function(path) {
+  objects <- new.env()
+  load(path, envir = objects)
+  fields <- lapply(ls(objects), function(name) {
+    object <- get(name, envir = objects)
+    if (is.data.frame(object)) fields_from_table(object, path, sheet = name) else new_fields()
+  })
+  do.call(rbind, c(list(new_fields()), fields))
+}
+
 read_text_file <- function(path) {
   fields_from_text(readr::read_lines(path, progress = FALSE), path, "lines")
 }
@@ -105,7 +115,9 @@ read_html_file <- function(path) {
 
 readers <- function() {
   haven_reader <- function(read) function(path) fields_from_table(read(path), path)
-  text <- c("txt", "md", "log", "do", "r", "rmd", "qmd", "py", "tex", "smcl", "sql")
+  text <- c(
+    "txt", "md", "log", "do", "r", "rmd", "qmd", "py", "tex", "bib", "smcl", "sql", "yaml", "yml"
+  )
   c(
     list(
       csv = function(path) read_delim_file(path, ","),
@@ -120,7 +132,8 @@ readers <- function() {
       json = function(path) read_json_file(path),
       jsonl = function(path) read_json_file(path, lines = TRUE),
       ndjson = function(path) read_json_file(path, lines = TRUE),
-      rds = read_rds_file, pdf = read_pdf_file, docx = read_docx_file, rtf = read_rtf_file,
+      rds = read_rds_file, rdata = read_rdata_file, rda = read_rdata_file,
+      pdf = read_pdf_file, docx = read_docx_file, rtf = read_rtf_file,
       html = read_html_file, htm = read_html_file
     ),
     stats::setNames(rep(list(read_text_file), length(text)), text)

@@ -48,6 +48,30 @@ It is a scanner. It does not anonymize, redact, or certify that data are safe.
    Java and no system libraries beyond what its imports need. Heavier
    detectors (Presidio, named-entity models, libphonenumber) are opt-in.
 
+## Pipeline
+
+A scan is four stages, each in its own files, each replaceable:
+
+| Stage | Does | Code |
+|---|---|---|
+| read | turns files and objects into fields; accounts for every file | `R/read.R`, `R/readers.R`, `R/fields.R` |
+| normalize | cleans values so patterns can match dirty data | `R/normalize.R` |
+| detect | name, value and structure evidence, one function each | `R/terms.R`, `R/detect-name.R`, `R/detect-value.R` |
+| report | findings, summary, the check that gates a script | `R/findings.R`, `R/scan.R`, `R/report.R` |
+
+A fifth stage, redact, comes later and consumes findings.
+
+Normalization exists because real exports are dirty. It applies Unicode
+compatibility normalization, turns decimal digits of any script into ASCII
+digits, drops zero-width and other invisible format characters, and collapses
+whitespace, all through ICU (`stringi`). It does not yet undo deliberate
+obfuscation ("name at gmail dot com"), spelled-out digits, or OCR confusions
+such as O for 0; those belong to an optional, more aggressive cleaning step.
+
+The flagger proposes and a person disposes. A finding is a proposal with its
+evidence; the decision (keep, drop, redact, allow with a reason) is the
+user's, is recorded in the project, and is what the check enforces.
+
 ## Reading
 
 Everything is read into one shape, a table of **fields**:
@@ -156,8 +180,12 @@ Function names share the `pii_` prefix; arguments are data first.
    file yields two rows saying so, and the scan still completes.
 4. **A second opinion.** Presidio run on the same benchmark; disagreements are
    listed in a vignette, not hidden.
-5. **Real data.** One public survey file with documented personal fields,
-   named in the vignette, scanned and compared by hand.
+5. **Real data.** Scans of real project folders, compared by hand. The first,
+   a folder of election and survey files, cut flagged fields from 465 to 251
+   by showing where the rules were loose (place names read as person names,
+   precise numbers as coordinates, keys as text), and found a column of real
+   mobile numbers. The benchmark and the detectors were written by the same
+   hand, so real folders are the check that counts.
 6. `R CMD check --as-cran` clean on the five r-canon platforms with no
    optional backend installed. Examples and tests run offline in seconds.
 
@@ -173,21 +201,74 @@ by `usethis`. Release by `usethis::use_release_issue()`.
 
 License: MIT. Every import is MIT, Apache or similarly permissive.
 
+## Speed
+
+A scan must be cheap enough to run on every commit.
+
+- Detectors see the distinct values of a column and their counts, so a coded
+  column costs the same at a thousand rows or a million.
+- Column types are used: logical columns are skipped, numeric and date columns
+  skip the text patterns.
+- Above `sample` distinct values (default 10,000) a column is judged from an
+  evenly spaced subset. `sample = Inf` examines everything. Running text is
+  always examined in full.
+- Date formats are only guessed for values shaped like dates. Guessing on
+  arbitrary strings took 336 seconds on one real column; it now takes none.
+- Measured: a real project folder of 50 files and 3,137 fields scans in about
+  15 seconds on a laptop. The sister package's checksums are C++ (`cpp11`).
+- Later, where profiling says so: parallel scanning of files, and an
+  exhaustive mode for ragged sources such as YAML, nested JSON and long text.
+
+## Using it in a workflow
+
+Researchers call it from R. Projects also need it in the flow of work:
+
+1. **Review and exceptions.** `pii_review()` would write the findings as a
+   file with a decision column for a person to fill in. A committed `.piiscan.yml` holds what has been reviewed:
+   fields and files that may stay, detectors turned off, thresholds, and extra
+   terms. `pii_check()` reads it. An exception names a field and a reason, not
+   a blanket switch.
+2. **Custom patterns.** Users declare their own: a name, a regular expression
+   or a function, an optional validator and a confidence. Study ids, staff
+   codes and local identifiers go here.
+3. **Git.** A pre-commit hook (`language: r` in `.pre-commit-hooks.yaml`) and a
+   GitHub Action that scan the files a commit touches and fail on unreviewed
+   findings. A Python port is on the table if no Python package does the same
+   job, since most hooks run in Python environments.
+4. **Redaction.** The levels are: report (now); drop a field; replace values
+   with a placeholder of the same type; replace with a stable pseudonym, so
+   joins and counts still work; and a custom function. The model is Presidio's
+   split between an analyzer that returns typed spans with scores and an
+   anonymizer that applies an operator per type (replace, mask, hash, redact,
+   encrypt, custom). `pii_scan()` is the analyzer; `pii_redact()` would be the
+   anonymizer and write a clean copy beside the original.
+5. **Originals out of git.** With a clean copy written, the original can be
+   added to `.gitignore` and the clean copy committed. This is opt-in and
+   prints what it did; it does not rewrite history, so an original already
+   committed stays in the repository's past.
+6. **URLs and browsing data.** A URL can carry personal data in its user,
+   path and query string. A URL detector would parse with a maintained parser
+   and report or strip those parts while keeping the host.
+
+Items 1 to 3 come before redaction: a scanner people cannot quiet is one they
+remove.
+
 ## Milestones
 
-| Version | Contents |
-|---|---|
-| 0.0.0.9000 | this spec, package skeleton, r-canon adopted, benchmark generator |
-| 0.1.0 | reading layer and read report for every format above |
-| 0.2.0 | name and value detectors; tabular benchmark passes |
-| 0.3.0 | text documents and the Qualtrics reader; text benchmark passes |
-| 0.4.0 | optional backends; comparison vignette |
-| 0.5.0 | `pii_check()`, allowlists, real-data vignette |
-| 1.0.0 | CRAN submission |
+| Version | Contents | State |
+|---|---|---|
+| 0.0.0.9000 | spec, package, r-canon, reading layer, core detectors, `idcheck` hook-in, speed | done |
+| 0.1.0 | `.piiscan.yml` exceptions, custom patterns, file-name scanning | |
+| 0.2.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports | |
+| 0.3.0 | pre-commit hook and GitHub Action | |
+| 0.4.0 | optional backends: Presidio, `nametagger`; comparison vignette | |
+| 0.5.0 | phone validation on libphonenumber metadata | |
+| 0.6.0 | `pii_redact()` | |
+| 1.0.0 | CRAN submission, after `idcheck` is on CRAN | |
 
 ## Out of scope
 
-- Removing, masking or recoding personal data.
+- Removing, masking or recoding personal data, until `pii_redact()`.
 - Indirect identification from combinations of traits. `sdcMicro` does this.
 - Secrets such as API keys. `gitleaks` does this.
 - Images, audio, scanned documents.
@@ -199,9 +280,13 @@ License: MIT. Every import is MIT, Apache or similarly permissive.
    The core flags digit strings of 10 to 13 digits as `phone`, confidence
    low. Decided: build our own validator on Google's libphonenumber metadata
    (Apache-2.0), credited, likely in the sister package below.
-2. **National ids.** Decided: a sister package validates identity numbers
-   (Aadhaar's Verhoeff checksum, PAN, GSTIN and others) in C++; piiscan will
-   suggest it and use it when installed.
+2. **National ids.** Decided and built: the sister package
+   [idcheck](https://github.com/gojiplus/idcheck) validates identity numbers in
+   C++ (Aadhaar by Verhoeff checksum, GSTIN by checksum, PAN, voter id,
+   passport and Indian mobile numbers by format). piiscan uses it when
+   installed; a checksum match is high confidence. CRAN does have two Verhoeff
+   packages, `verhoeff` and `CheckDigit`, but both are GPL and neither is
+   built for scanning a column.
 3. **Person names in values.** Without a model, the core can only say "short,
    capitalized, mostly distinct strings", confidence low. Proposal: that, plus
    `use_nametagger()` as the no-Python upgrade.
