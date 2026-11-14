@@ -1,0 +1,72 @@
+---
+title: "Roadmap"
+---
+
+What is planned, in the order it is planned, and the questions still open.
+Changes to this page are proposals; open an issue to argue with one.
+
+## Using it in a workflow
+
+Researchers call it from R. Projects also need it in the flow of work:
+
+1. **Review and exceptions.** `pii_review()` would write the findings as a
+   file with a decision column for a person to fill in. A committed `.piiscan.yml` holds what has been reviewed:
+   fields and files that may stay, detectors turned off, thresholds, and extra
+   terms. `pii_check()` reads it. An exception names a field and a reason, not
+   a blanket switch.
+2. **Custom patterns.** Users declare their own: a name, a regular expression
+   or a function, an optional validator and a confidence. Study ids, staff
+   codes and local identifiers go here.
+3. **Git.** A pre-commit hook (`language: r` in `.pre-commit-hooks.yaml`) and a
+   GitHub Action that scan the files a commit touches and fail on unreviewed
+   findings. A Python port is on the table if no Python package does the same
+   job, since most hooks run in Python environments.
+4. **Redaction.** The levels are: report (now); drop a field; replace values
+   with a placeholder of the same type; replace with a stable pseudonym, so
+   joins and counts still work; and a custom function. The model is Presidio's
+   split between an analyzer that returns typed spans with scores and an
+   anonymizer that applies an operator per type (replace, mask, hash, redact,
+   encrypt, custom). `pii_scan()` is the analyzer; `pii_redact()` would be the
+   anonymizer and write a clean copy beside the original.
+5. **Originals out of git.** With a clean copy written, the original can be
+   added to `.gitignore` and the clean copy committed. This is opt-in and
+   prints what it did; it does not rewrite history, so an original already
+   committed stays in the repository's past.
+6. **URLs and browsing data.** A URL can carry personal data in its user,
+   path and query string. A URL detector would parse with a maintained parser
+   and report or strip those parts while keeping the host.
+
+Items 1 to 3 come before redaction: a scanner people cannot quiet is one they
+remove.
+
+## Versions
+
+| Version | Contents | State |
+|---|---|---|
+| 0.0.0.9000 | spec, package, r-canon, reading layer, core detectors, `idcheck` hook-in, speed | done |
+| 0.1.0 | `.piiscan.yml` exceptions, custom patterns, file-name scanning | |
+| 0.2.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports | |
+| 0.3.0 | pre-commit hook and GitHub Action | |
+| 0.4.0 | optional backends: Presidio, `nametagger`; comparison vignette | |
+| 0.5.0 | phone validation on libphonenumber metadata | |
+| 0.6.0 | `pii_redact()` | |
+| 1.0.0 | CRAN submission, after `idcheck` is on CRAN | |
+
+## Open questions
+
+1. **Phone numbers.** No maintained, Java-free libphonenumber exists on CRAN:
+   `dialvalidator` was archived on 2026-03-30 and `dialr` (2023) needs Java.
+   The core flags digit strings of 10 to 13 digits as `phone`, confidence
+   low. Decided: build our own validator on Google's libphonenumber metadata
+   (Apache-2.0), credited, likely in the sister package below.
+2. **National ids.** Decided and built: the sister package
+   [idcheck](https://github.com/gojiplus/idcheck) validates identity numbers in
+   C++ (Aadhaar by Verhoeff checksum, GSTIN by checksum, PAN, voter id,
+   passport and Indian mobile numbers by format). piiscan uses it when
+   installed; a checksum match is high confidence. CRAN does have two Verhoeff
+   packages, `verhoeff` and `CheckDigit`, but both are GPL and neither is
+   built for scanning a column.
+3. **Person names in values.** Without a model, the core can only say "short,
+   capitalized, mostly distinct strings", confidence low. Proposal: that, plus
+   `use_nametagger()` as the no-Python upgrade.
+4. **The name.** `piiscan` is free on CRAN and GitHub.

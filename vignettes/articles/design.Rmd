@@ -1,14 +1,17 @@
-# piiscan: specification
+---
+title: "How piiscan works"
+---
 
-Status: draft 2, 2026-11-14. The reading layer and the core detectors exist and
-pass the tabular benchmark. This file is the contract versions are checked
-against; it changes by pull request.
+piiscan finds likely personal data in research files and reports where it is,
+with the evidence, so a person can decide what to do. This page explains the
+design: why it exists, how a scan proceeds, what it reads and detects, and how
+we check that it works.
 
-## Problem
+## Why another scanner
 
 Before a research dataset is shared, someone has to find the personal data in
 it. The existing free scanners do not do this well. Measured on a synthetic
-survey with known answers (`data-raw/benchmark/`, 28 columns, 12 personal):
+survey with known answers (the benchmark in `data-raw/benchmark/` of the repository, 28 columns, 12 personal):
 
 | Tool | Reads | Looks at | Result |
 |---|---|---|---|
@@ -20,13 +23,6 @@ survey with known answers (`data-raw/benchmark/`, 28 columns, 12 personal):
 Two failures recur. The tools skip files they cannot open without saying so,
 and they judge a column by its name, so an email address in a column called
 `q12` is invisible.
-
-## What piiscan is
-
-An R package that finds likely personal data in files and data frames and
-reports where it is, with the evidence, so a person can decide what to do.
-
-It is a scanner. It does not anonymize, redact, or certify that data are safe.
 
 ## Principles
 
@@ -168,9 +164,27 @@ Around it:
 
 Function names share the `pii_` prefix; arguments are data first.
 
+## Speed
+
+A scan must be cheap enough to run on every commit.
+
+- Detectors see the distinct values of a column and their counts, so a coded
+  column costs the same at a thousand rows or a million.
+- Column types are used: logical columns are skipped, numeric and date columns
+  skip the text patterns.
+- Above `sample` distinct values (default 10,000) a column is judged from an
+  evenly spaced subset. `sample = Inf` examines everything. Running text is
+  always examined in full.
+- Date formats are only guessed for values shaped like dates. Guessing on
+  arbitrary strings took 336 seconds on one real column; it now takes none.
+- Measured: a real project folder of 50 files and 3,137 fields scans in about
+  15 seconds on a laptop. The sister package's checksums are C++ (`cpp11`).
+- Later, where profiling says so: parallel scanning of files, and an
+  exhaustive mode for ragged sources such as YAML, nested JSON and long text.
+
 ## How we know it works
 
-1. **Benchmark, tabular.** On `data-raw/benchmark/` the core must catch at
+1. **Benchmark, tabular.** On the benchmark in `data-raw/benchmark/` of the repository the core must catch at
    least 11 of 12 personal columns with at most 2 false alarms among the 16
    others, and 9 of 9 in the Qualtrics export. The same file in csv, dta, xlsx,
    parquet, tsv and ndjson must give the same findings.
@@ -192,102 +206,9 @@ Function names share the `pii_` prefix; arguments are data first.
 The benchmark is adversarial by construction, so its false-alarm rate is a
 stress test, not an estimate for typical data.
 
-## Standards
-
-[r-canon](https://github.com/gojiplus/r-canon) throughout: its five workflows
-at `@v2`, the canonical `.lintr`, testthat edition 3, roxygen2, pkgdown
-published by Actions, `NEWS.md`, semantic versions matching tags. Scaffolding
-by `usethis`. Release by `usethis::use_release_issue()`.
-
-License: MIT. Every import is MIT, Apache or similarly permissive.
-
-## Speed
-
-A scan must be cheap enough to run on every commit.
-
-- Detectors see the distinct values of a column and their counts, so a coded
-  column costs the same at a thousand rows or a million.
-- Column types are used: logical columns are skipped, numeric and date columns
-  skip the text patterns.
-- Above `sample` distinct values (default 10,000) a column is judged from an
-  evenly spaced subset. `sample = Inf` examines everything. Running text is
-  always examined in full.
-- Date formats are only guessed for values shaped like dates. Guessing on
-  arbitrary strings took 336 seconds on one real column; it now takes none.
-- Measured: a real project folder of 50 files and 3,137 fields scans in about
-  15 seconds on a laptop. The sister package's checksums are C++ (`cpp11`).
-- Later, where profiling says so: parallel scanning of files, and an
-  exhaustive mode for ragged sources such as YAML, nested JSON and long text.
-
-## Using it in a workflow
-
-Researchers call it from R. Projects also need it in the flow of work:
-
-1. **Review and exceptions.** `pii_review()` would write the findings as a
-   file with a decision column for a person to fill in. A committed `.piiscan.yml` holds what has been reviewed:
-   fields and files that may stay, detectors turned off, thresholds, and extra
-   terms. `pii_check()` reads it. An exception names a field and a reason, not
-   a blanket switch.
-2. **Custom patterns.** Users declare their own: a name, a regular expression
-   or a function, an optional validator and a confidence. Study ids, staff
-   codes and local identifiers go here.
-3. **Git.** A pre-commit hook (`language: r` in `.pre-commit-hooks.yaml`) and a
-   GitHub Action that scan the files a commit touches and fail on unreviewed
-   findings. A Python port is on the table if no Python package does the same
-   job, since most hooks run in Python environments.
-4. **Redaction.** The levels are: report (now); drop a field; replace values
-   with a placeholder of the same type; replace with a stable pseudonym, so
-   joins and counts still work; and a custom function. The model is Presidio's
-   split between an analyzer that returns typed spans with scores and an
-   anonymizer that applies an operator per type (replace, mask, hash, redact,
-   encrypt, custom). `pii_scan()` is the analyzer; `pii_redact()` would be the
-   anonymizer and write a clean copy beside the original.
-5. **Originals out of git.** With a clean copy written, the original can be
-   added to `.gitignore` and the clean copy committed. This is opt-in and
-   prints what it did; it does not rewrite history, so an original already
-   committed stays in the repository's past.
-6. **URLs and browsing data.** A URL can carry personal data in its user,
-   path and query string. A URL detector would parse with a maintained parser
-   and report or strip those parts while keeping the host.
-
-Items 1 to 3 come before redaction: a scanner people cannot quiet is one they
-remove.
-
-## Milestones
-
-| Version | Contents | State |
-|---|---|---|
-| 0.0.0.9000 | spec, package, r-canon, reading layer, core detectors, `idcheck` hook-in, speed | done |
-| 0.1.0 | `.piiscan.yml` exceptions, custom patterns, file-name scanning | |
-| 0.2.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports | |
-| 0.3.0 | pre-commit hook and GitHub Action | |
-| 0.4.0 | optional backends: Presidio, `nametagger`; comparison vignette | |
-| 0.5.0 | phone validation on libphonenumber metadata | |
-| 0.6.0 | `pii_redact()` | |
-| 1.0.0 | CRAN submission, after `idcheck` is on CRAN | |
-
 ## Out of scope
 
 - Removing, masking or recoding personal data, until `pii_redact()`.
 - Indirect identification from combinations of traits. `sdcMicro` does this.
 - Secrets such as API keys. `gitleaks` does this.
 - Images, audio, scanned documents.
-
-## Open questions
-
-1. **Phone numbers.** No maintained, Java-free libphonenumber exists on CRAN:
-   `dialvalidator` was archived on 2026-03-30 and `dialr` (2023) needs Java.
-   The core flags digit strings of 10 to 13 digits as `phone`, confidence
-   low. Decided: build our own validator on Google's libphonenumber metadata
-   (Apache-2.0), credited, likely in the sister package below.
-2. **National ids.** Decided and built: the sister package
-   [idcheck](https://github.com/gojiplus/idcheck) validates identity numbers in
-   C++ (Aadhaar by Verhoeff checksum, GSTIN by checksum, PAN, voter id,
-   passport and Indian mobile numbers by format). piiscan uses it when
-   installed; a checksum match is high confidence. CRAN does have two Verhoeff
-   packages, `verhoeff` and `CheckDigit`, but both are GPL and neither is
-   built for scanning a column.
-3. **Person names in values.** Without a model, the core can only say "short,
-   capitalized, mostly distinct strings", confidence low. Proposal: that, plus
-   `use_nametagger()` as the no-Python upgrade.
-4. **The name.** `piiscan` is free on CRAN and GitHub.

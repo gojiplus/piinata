@@ -90,5 +90,7 @@ reported as unsupported, with the package to install.
 - **Identity numbers:** Aadhaar, GSTIN, PAN and others, when the
   [idcheck](https://github.com/gojiplus/idcheck) package is installed.
 
-[SPEC.md](SPEC.md) has the design, the benchmark it is held to, and what is
-out of scope.
+[How piiscan works](https://gojiplus.github.io/piiscan/articles/design.html)
+has the design, the benchmark it is held to and what is out of scope. The
+[roadmap](https://gojiplus.github.io/piiscan/articles/roadmap.html) has what
+comes next.

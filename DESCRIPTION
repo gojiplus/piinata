@@ -43,3 +43,6 @@ Imports:
     stringi,
     stringr,
     tibble
+Config/Needs/website: rmarkdown
+Remotes:  
+    gojiplus/idcheck

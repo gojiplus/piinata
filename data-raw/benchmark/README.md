@@ -15,6 +15,6 @@ Twelve of the non-personal columns are traps: their names contain a keyword
 test, not an estimate for typical data.
 
 `score_jpal.py` scores the output of J-PAL's `PII-Scan` against `truth.json`;
-it produced the numbers quoted in `SPEC.md`.
+it produced the numbers quoted in the design article.
 
 The generator is Python for now and moves to R with the package skeleton.

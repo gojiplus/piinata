@@ -1,3 +1,24 @@
 url: https://gojiplus.github.io/piiscan/
 template:
   bootstrap: 5
+
+reference:
+  - title: Scan
+    desc: Find likely personal data and act on what was found.
+    contents:
+      - pii_scan
+      - pii_summary
+      - pii_check
+  - title: Read
+    desc: Turn files and objects into fields, and account for every file.
+    contents:
+      - pii_read
+      - pii_read_report
+      - as_pii_fields
+
+articles:
+  - title: Design
+    navbar: Design
+    contents:
+      - articles/design
+      - articles/roadmap
