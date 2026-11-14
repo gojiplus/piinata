@@ -29,7 +29,25 @@ matched <- function(values, type) {
   )
 }
 
-detect_patterns <- function(values, weight, free, types = c("email", "phone", "ip_address")) {
+# Most ten-digit numbers are assignable phone numbers somewhere, so digits
+# alone say little about one value. They say a lot about a column: random
+# identifiers are almost never phone-like on nine rows in ten across a hundred
+# rows. Short columns need a name or label that says phone, and a number
+# written the way people write phone numbers (a leading plus, separators, or
+# inside a sentence) needs neither.
+phone_confidence <- function(values, weight, hit, free, corroborated) {
+  found <- !is.na(hit)
+  n <- sum(weight[found])
+  share <- n / sum(weight)
+  written <- stringr::str_detect(hit[found], "^\\+|\\d[\\s().-]+\\d")
+  embedded <- nchar(values[found]) > nchar(hit[found]) + 4L
+  deliberate <- sum(weight[found][written | embedded]) > n / 2
+  filled <- share >= 0.9 && (sum(weight) >= 100 || corroborated)
+  if (free || deliberate || filled) "medium" else "low"
+}
+
+detect_patterns <- function(values, weight, free, types = c("email", "phone", "ip_address"),
+                            corroborated = FALSE) {
   found <- list()
   total <- sum(weight)
   threshold <- if (free) 1 else max(5, 0.05 * total)
@@ -37,11 +55,11 @@ detect_patterns <- function(values, weight, free, types = c("email", "phone", "i
     hit <- matched(values, type)
     n <- sum(weight[!is.na(hit)])
     if (n >= threshold) {
-      # A phone-like number is unvalidated, so it is only weak evidence unless
-      # it fills the column or sits inside longer text, where digits are deliberate.
-      embedded <- sum(weight[!is.na(hit) & nchar(values) > nchar(hit) + 4L]) > n / 2
-      weak <- type == "phone" && !free && !embedded && n / total < 0.8
-      confidence <- if (weak) "low" else if (type == "phone") "medium" else "high"
+      confidence <- if (type == "phone") {
+        phone_confidence(values, weight, hit, free, corroborated)
+      } else {
+        "high"
+      }
       examples <- hit[!is.na(hit)]
       found <- c(found, list(finding(type, "value", type, n, n / total, examples, confidence)))
     }
@@ -114,13 +132,15 @@ detect_values <- function(field, values, weight) {
     return(list())
   }
   total <- sum(weight)
+  described <- tokens(paste(stats::na.omit(c(field$name, field$label)), collapse = " "))
+  phone_named <- any(described %in% name_terms()$phone)
   if (field$type == "date") {
     dates <- lubridate::parse_date_time(values, orders = c("ymd", "ymd HMS"), quiet = TRUE)
     return(detect_birth_dates(values, weight, dates))
   }
   if (field$type == "numeric") {
     return(c(
-      detect_patterns(values, weight, FALSE, "phone"),
+      detect_patterns(values, weight, FALSE, "phone", phone_named),
       detect_identity_numbers(values, weight)
     ))
   }
@@ -129,7 +149,7 @@ detect_values <- function(field, values, weight) {
   wordy <- stats::weighted.mean(words, weight) >= 5
   free <- field$kind == "text" || (wordy && distinct >= 0.3)
   # Sentences are searched match by match even when most rows repeat a stock answer.
-  found <- detect_patterns(values, weight, free || wordy)
+  found <- detect_patterns(values, weight, free || wordy, corroborated = phone_named)
   if (field$kind == "text") {
     return(found)
   }

@@ -19,3 +19,6 @@
 * `pii_redact()` drops, masks, replaces or pseudonymizes flagged columns.
 * The package is named piinata; it was briefly piiscan. The configuration file
   is `.piinata.yml`.
+* Phone-like numbers are graded by how they are written and how much of a
+  column they fill: bare digits need nine rows in ten across at least a
+  hundred rows, or a name or label that says phone.

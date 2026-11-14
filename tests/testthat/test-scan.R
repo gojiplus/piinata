@@ -125,3 +125,26 @@ test_that("identity numbers with a valid checksum are strong evidence", {
   random <- pii_scan(data.frame(q8 = sprintf("%012.0f", 2e11 + 104729 * 1:30)))
   expect_false("in_aadhaar" %in% random$type)
 })
+
+phone_grade <- function(data) {
+  findings <- pii_scan(data)
+  findings$confidence[findings$type == "phone" & findings$evidence == "value"]
+}
+
+test_that("bare digits are weak evidence in a short, unnamed column", {
+  digits <- sprintf("98765%05d", 1:40)
+  expect_equal(phone_grade(data.frame(q7 = digits)), "low")
+  expect_equal(phone_grade(data.frame(q7 = sprintf("98765%05d", 1:150))), "medium")
+  expect_equal(phone_grade(data.frame(mobile = digits)), "medium")
+})
+
+test_that("a column only partly phone-like stays weak", {
+  mixed <- c(sprintf("98765%05d", 1:120), sprintf("%04d", 1:40))
+  expect_equal(phone_grade(data.frame(q7 = mixed)), "low")
+})
+
+test_that("numbers written as phone numbers need no other support", {
+  expect_equal(phone_grade(data.frame(q7 = sprintf("+1 415 555 %04d", 1:20))), "medium")
+  expect_equal(phone_grade(data.frame(q7 = sprintf("(415) 555-%04d ext", 1:20))), "medium")
+  expect_equal(phone_grade(data.frame(q7 = sprintf("+44 20 7946 %04d", 1:20))), "medium")
+})
