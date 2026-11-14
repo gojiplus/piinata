@@ -8,7 +8,7 @@ pii_redact(
   data,
   findings = pii_scan(data),
   method = "pseudonym",
-  key = "piiscan",
+  key = "piinata",
   min_confidence = "medium"
 )
 }

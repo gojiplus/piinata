@@ -10,7 +10,7 @@ Changes to this page are proposals; open an issue to argue with one.
 Researchers call it from R. Projects also need it in the flow of work:
 
 1. **Review and exceptions.** `pii_review()` would write the findings as a
-   file with a decision column for a person to fill in. A committed `.piiscan.yml` holds what has been reviewed:
+   file with a decision column for a person to fill in. A committed `.piinata.yml` holds what has been reviewed:
    fields and files that may stay, detectors turned off, thresholds, and extra
    terms. `pii_check()` reads it. An exception names a field and a reason, not
    a blanket switch.
@@ -44,7 +44,7 @@ remove.
 | Version | Contents | State |
 |---|---|---|
 | 0.0.0.9000 | reading layer, normalization, core detectors, `idcheck`, speed | done |
-| | `.piiscan.yml` exceptions, custom patterns, ignore globs, review and accept | done |
+| | `.piinata.yml` exceptions, custom patterns, ignore globs, review and accept | done |
 | | `pii_redact()` for data frames: drop, placeholder, mask, pseudonym | done |
 | 0.1.0 | first CRAN release, after `idcheck` | |
 | 0.2.0 | redacting files in place of data frames; clean copy beside the original | |
@@ -63,11 +63,11 @@ remove.
 2. **National ids.** Decided and built: the sister package
    [idcheck](https://github.com/gojiplus/idcheck) validates identity numbers in
    C++ (Aadhaar by Verhoeff checksum, GSTIN by checksum, PAN, voter id,
-   passport and Indian mobile numbers by format). piiscan uses it when
+   passport and Indian mobile numbers by format). piinata uses it when
    installed; a checksum match is high confidence. CRAN does have two Verhoeff
    packages, `verhoeff` and `CheckDigit`, but both are GPL and neither is
    built for scanning a column.
 3. **Person names in values.** Without a model, the core can only say "short,
    capitalized, mostly distinct strings", confidence low. Proposal: that, plus
    `use_nametagger()` as the no-Python upgrade.
-4. **The name.** `piiscan` is free on CRAN and GitHub.
+4. **The name.** `piinata` is free on CRAN and GitHub.

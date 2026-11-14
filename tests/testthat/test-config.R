@@ -1,11 +1,11 @@
 write_config <- function(lines, dir = withr::local_tempdir(.local_envir = parent.frame())) {
-  path <- file.path(dir, ".piiscan.yml")
+  path <- file.path(dir, ".piinata.yml")
   writeLines(lines, path)
   path
 }
 
 test_that("a missing configuration is empty", {
-  config <- pii_config(file.path(withr::local_tempdir(), ".piiscan.yml"))
+  config <- pii_config(file.path(withr::local_tempdir(), ".piinata.yml"))
   expect_length(config$allow, 0L)
   expect_null(config$min_confidence)
 })
@@ -79,7 +79,7 @@ test_that("a bad pattern is rejected when the configuration is read", {
 test_that("review decisions are recorded and then honored", {
   dir <- withr::local_tempdir()
   review <- file.path(dir, "review.csv")
-  config <- file.path(dir, ".piiscan.yml")
+  config <- file.path(dir, ".piinata.yml")
   data <- data.frame(village = paste("Village", 1:30), phone = sprintf("98765%05d", 1:30))
   findings <- pii_scan(data)
   expect_message(pii_review(findings, review), "to review")
@@ -103,5 +103,5 @@ test_that("allowing without a reason is refused", {
   decisions$decision <- "allow"
   decisions$reason <- ""
   readr::write_csv(decisions, review)
-  expect_error(pii_accept(review, file.path(dir, ".piiscan.yml")), "needs a")
+  expect_error(pii_accept(review, file.path(dir, ".piinata.yml")), "needs a")
 })

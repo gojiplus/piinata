@@ -5,9 +5,9 @@
 \alias{pii_accept}
 \title{Review findings and record the decisions}
 \usage{
-pii_review(findings, file = "piiscan-review.csv")
+pii_review(findings, file = "piinata-review.csv")
 
-pii_accept(file = "piiscan-review.csv", config = ".piiscan.yml")
+pii_accept(file = "piinata-review.csv", config = ".piinata.yml")
 }
 \arguments{
 \item{findings}{The result of \code{\link[=pii_scan]{pii_scan()}}.}
@@ -25,14 +25,14 @@ The scanner proposes; a person decides. \code{pii_review()} writes one row per
 flagged field to a CSV file with two empty columns, \code{decision} and
 \code{reason}. Fill in \code{allow} for a field that may stay, with the reason, and
 \code{remove} for one that must go. \code{pii_accept()} then records the allowed
-fields in the project's \code{.piiscan.yml}, where \code{\link[=pii_check]{pii_check()}} finds them, so a
+fields in the project's \code{.piinata.yml}, where \code{\link[=pii_check]{pii_check()}} finds them, so a
 decision is made once and kept with the data.
 }
 \examples{
 dir <- tempfile()
 dir.create(dir)
 review <- file.path(dir, "review.csv")
-config <- file.path(dir, ".piiscan.yml")
+config <- file.path(dir, ".piinata.yml")
 findings <- pii_scan(data.frame(village = paste("Village", 1:30)))
 pii_review(findings, review)
 

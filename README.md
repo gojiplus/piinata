@@ -1,24 +1,26 @@
-# piiscan
+# piinata
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/gojiplus/piiscan/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/gojiplus/piiscan/actions/workflows/R-CMD-check.yml)
+[![R-CMD-check](https://github.com/gojiplus/piinata/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/gojiplus/piinata/actions/workflows/R-CMD-check.yml)
 <!-- badges: end -->
 
 Find likely personal data in research files before they are shared.
 
-piiscan reads survey exports, statistical data files, spreadsheets and text
+piinata reads survey exports, statistical data files, spreadsheets and text
 documents, and reports which fields look personal and why. It looks at what a
 field is called, what it contains, and how it behaves, so an email address in a
 column named `q12` is found as readily as one in a column named `email`.
 
-It is a scanner. It does not anonymize, and an empty report does not show that
+It reports, and it can redact what it finds. An empty report does not show that
 data are safe to share.
+
+The name: hit a file and see what personal data falls out.
 
 ## Installation
 
 ``` r
 # install.packages("pak")
-pak::pak("gojiplus/piiscan")
+pak::pak("gojiplus/piinata")
 ```
 
 ## Usage
@@ -26,7 +28,7 @@ pak::pak("gojiplus/piiscan")
 Point it at a folder, a file or a data frame:
 
 ``` r
-library(piiscan)
+library(piinata)
 
 survey <- data.frame(
   q12 = paste0("person", 1:20, "@example.org"),
@@ -65,16 +67,16 @@ pii_check(findings, allow = c("village", "district"))
 
 The scanner proposes; you decide. Write the findings to a review file, mark
 each field `allow` or `remove` with a reason, and record the allowed ones in
-the project's `.piiscan.yml`:
+the project's `.piinata.yml`:
 
 ``` r
-pii_review(findings, "piiscan-review.csv")
+pii_review(findings, "piinata-review.csv")
 # ... fill in the decision and reason columns ...
-pii_accept("piiscan-review.csv")
+pii_accept("piinata-review.csv")
 pii_check(findings)
 ```
 
-`.piiscan.yml` also holds files to ignore, patterns for the study's own
+`.piinata.yml` also holds files to ignore, patterns for the study's own
 identifiers, and extra terms. Every exception needs a reason.
 
 ## Redact
@@ -117,7 +119,7 @@ reported as unsupported, with the package to install.
 - **Identity numbers:** Aadhaar, GSTIN, PAN and others, when the
   [idcheck](https://github.com/gojiplus/idcheck) package is installed.
 
-[How piiscan works](https://gojiplus.github.io/piiscan/articles/design.html)
+[How piinata works](https://gojiplus.github.io/piinata/articles/design.html)
 has the design, the benchmark it is held to and what is out of scope. The
-[roadmap](https://gojiplus.github.io/piiscan/articles/roadmap.html) has what
+[roadmap](https://gojiplus.github.io/piinata/articles/roadmap.html) has what
 comes next.

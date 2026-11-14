@@ -1,8 +1,8 @@
 ---
-title: "How piiscan works"
+title: "How piinata works"
 ---
 
-piiscan finds likely personal data in research files and reports where it is,
+piinata finds likely personal data in research files and reports where it is,
 with the evidence, so a person can decide what to do. This page explains the
 design: why it exists, how a scan proceeds, what it reads and detects, and how
 we check that it works.
@@ -57,7 +57,7 @@ A scan is four stages, each in its own files, each replaceable:
 
 Two more stages act on findings: decide (`R/config.R`, `R/review.R`), where a
 person allows or removes each flagged field and the decision is recorded in
-`.piiscan.yml`, and redact (`R/redact.R`), which drops, masks or pseudonymizes
+`.piinata.yml`, and redact (`R/redact.R`), which drops, masks or pseudonymizes
 what was flagged.
 
 Normalization exists because real exports are dirty. It applies Unicode

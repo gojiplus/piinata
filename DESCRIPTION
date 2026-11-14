@@ -1,4 +1,4 @@
-Package: piiscan
+Package: piinata
 Title: Find Personal Data in Research Files
 Version: 0.0.0.9000
 Authors@R: 
@@ -11,9 +11,9 @@ Description: Scans survey exports, statistical data files, spreadsheets
     evidence: what a field is called, what it contains, or how it behaves.
     The package reports; it does not anonymize.
 License: MIT + file LICENSE
-URL: https://gojiplus.github.io/piiscan/,
-    https://github.com/gojiplus/piiscan
-BugReports: https://github.com/gojiplus/piiscan/issues
+URL: https://gojiplus.github.io/piinata/,
+    https://github.com/gojiplus/piinata
+BugReports: https://github.com/gojiplus/piinata/issues
 Encoding: UTF-8
 Language: en-US
 Roxygen: list(markdown = TRUE)

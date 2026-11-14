@@ -2,9 +2,9 @@
 % Please edit documentation in R/config.R
 \name{pii_config}
 \alias{pii_config}
-\title{Read a project's piiscan configuration}
+\title{Read a project's piinata configuration}
 \usage{
-pii_config(path = ".piiscan.yml")
+pii_config(path = ".piinata.yml")
 }
 \arguments{
 \item{path}{The configuration file. A missing file gives an empty
@@ -14,7 +14,7 @@ configuration.}
 A list of class \code{pii_config}.
 }
 \description{
-A project records what it has decided in a \code{.piiscan.yml} file kept with the
+A project records what it has decided in a \code{.piinata.yml} file kept with the
 data: which findings were reviewed and may stay, which files are not
 scanned, and which extra patterns and terms matter to the study.
 \code{\link[=pii_scan]{pii_scan()}} and \code{\link[=pii_check]{pii_check()}} read it by default.

@@ -2,7 +2,7 @@ need <- function(package, what) {
   if (!rlang::is_installed(package)) {
     rlang::abort(
       paste0("install the '", package, "' package to read ", what),
-      class = "piiscan_unsupported"
+      class = "piinata_unsupported"
     )
   }
 }
@@ -67,7 +67,7 @@ read_rds_file <- function(path) {
   if (is.data.frame(data) || is.character(data)) {
     return(as_pii_fields(data, source = path))
   }
-  rlang::abort("holds neither a data frame nor text", class = "piiscan_unsupported")
+  rlang::abort("holds neither a data frame nor text", class = "piinata_unsupported")
 }
 
 read_rdata_file <- function(path) {
@@ -88,7 +88,7 @@ read_pdf_file <- function(path) {
   need("pdftools", "PDF files")
   pages <- pdftools::pdf_text(path)
   if (!any(nzchar(stringr::str_squish(pages)))) {
-    rlang::abort("has no text layer; it is probably a scan", class = "piiscan_unsupported")
+    rlang::abort("has no text layer; it is probably a scan", class = "piinata_unsupported")
   }
   fields <- lapply(seq_along(pages), function(i) {
     lines <- stringr::str_split(pages[i], "\n")[[1]]

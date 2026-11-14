@@ -15,7 +15,7 @@ read_one <- function(path, registry) {
       fields <- reader(path)
       list(fields = fields, status = "read", detail = NA_character_)
     },
-    piiscan_unsupported = function(e) {
+    piinata_unsupported = function(e) {
       list(fields = new_fields(), status = "unsupported", detail = conditionMessage(e))
     },
     error = function(e) {

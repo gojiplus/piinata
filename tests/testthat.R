@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(piiscan)
+library(piinata)
 
-test_check("piiscan")
+test_check("piinata")

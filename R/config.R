@@ -40,9 +40,9 @@ check_pattern <- function(pattern, path) {
   )
 }
 
-#' Read a project's piiscan configuration
+#' Read a project's piinata configuration
 #'
-#' A project records what it has decided in a `.piiscan.yml` file kept with the
+#' A project records what it has decided in a `.piinata.yml` file kept with the
 #' data: which findings were reviewed and may stay, which files are not
 #' scanned, and which extra patterns and terms matter to the study.
 #' [pii_scan()] and [pii_check()] read it by default.
@@ -79,7 +79,7 @@ check_pattern <- function(pattern, path) {
 #' file <- tempfile(fileext = ".yml")
 #' writeLines(c("allow:", "  - field: village", "    reason: Needed for clustering."), file)
 #' pii_config(file)$allow
-pii_config <- function(path = ".piiscan.yml") {
+pii_config <- function(path = ".piinata.yml") {
   config <- list(
     allow = list(), ignore = character(), patterns = list(), terms = list(),
     min_confidence = NULL, sample = NULL, path = path

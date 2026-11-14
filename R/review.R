@@ -4,7 +4,7 @@
 #' flagged field to a CSV file with two empty columns, `decision` and
 #' `reason`. Fill in `allow` for a field that may stay, with the reason, and
 #' `remove` for one that must go. `pii_accept()` then records the allowed
-#' fields in the project's `.piiscan.yml`, where [pii_check()] finds them, so a
+#' fields in the project's `.piinata.yml`, where [pii_check()] finds them, so a
 #' decision is made once and kept with the data.
 #'
 #' @param findings The result of [pii_scan()].
@@ -17,7 +17,7 @@
 #' dir <- tempfile()
 #' dir.create(dir)
 #' review <- file.path(dir, "review.csv")
-#' config <- file.path(dir, ".piiscan.yml")
+#' config <- file.path(dir, ".piinata.yml")
 #' findings <- pii_scan(data.frame(village = paste("Village", 1:30)))
 #' pii_review(findings, review)
 #'
@@ -28,7 +28,7 @@
 #'
 #' pii_accept(review, config)
 #' pii_check(findings, config = pii_config(config))
-pii_review <- function(findings, file = "piiscan-review.csv") {
+pii_review <- function(findings, file = "piinata-review.csv") {
   review <- pii_summary(findings)
   review$decision <- rep("", nrow(review))
   review$reason <- rep("", nrow(review))
@@ -43,7 +43,7 @@ pii_review <- function(findings, file = "piiscan-review.csv") {
 
 #' @rdname pii_review
 #' @export
-pii_accept <- function(file = "piiscan-review.csv", config = ".piiscan.yml") {
+pii_accept <- function(file = "piinata-review.csv", config = ".piinata.yml") {
   review <- readr::read_csv(
     file,
     col_types = readr::cols(.default = readr::col_character()), na = character()

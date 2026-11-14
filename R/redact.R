@@ -86,7 +86,7 @@ redact_spans <- function(values, types, redact) {
 #' head(clean)
 #' attr(clean, "redactions")
 pii_redact <- function(data, findings = pii_scan(data), method = "pseudonym",
-                       key = "piiscan", min_confidence = "medium") {
+                       key = "piinata", min_confidence = "medium") {
   if (!is.data.frame(data)) {
     cli::cli_abort("{.arg data} must be a data frame, not {.obj_type_friendly {data}}.")
   }
