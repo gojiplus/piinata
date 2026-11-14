@@ -6,7 +6,7 @@ import pandas as pd
 out = Path(sys.argv[1]); random.seed(7); n = 200
 first = ["Sunita", "Ramesh", "Geeta", "Mohammad", "Lakshmi", "Arjun", "Pooja", "Imran", "Kavita", "Suresh"]
 last = ["Devi", "Yadav", "Meena", "Khan", "Sharma", "Paswan", "Kumari", "Ansari", "Singh", "Gurjar"]
-vill = ["Bhogadeet", "Ajgara", "Palpur", "Netrad", "Jharoli", "Biliya", "Konra", "Sewali"]
+villages = ["Bhogadeet", "Ajgara", "Palpur", "Netrad", "Jharoli", "Biliya", "Konra", "Sewali"]
 name = [f"{random.choice(first)} {random.choice(last)}" for _ in range(n)]
 phone = [f"{random.choice('6789')}{random.randrange(10**8, 10**9)}" for _ in range(n)]
 truth = {}
@@ -17,7 +17,7 @@ d = pd.DataFrame({
     "resp_name": col("resp_name", name, True, "Respondent name"),
     "hh_phone": col("hh_phone", [f"+91 {p[:5]} {p[5:]}" for p in phone], True, "Household phone"),
     "dob": col("dob", [f"{random.randint(1,28):02d}/{random.randint(1,12):02d}/{random.randint(1955,2000)}" for _ in range(n)], True, "Date of birth"),
-    "village": col("village", [random.choice(vill) for _ in range(n)], True, "Village"),
+    "village": col("village", [random.choice(villages) for _ in range(n)], True, "Village"),
     "gps_lat": col("gps_lat", [round(26 + random.random(), 6) for _ in range(n)], True, "GPS latitude"),
     "gps_lon": col("gps_lon", [round(75 + random.random(), 6) for _ in range(n)], True, "GPS longitude"),
     # personal data hidden behind question numbers: only the values give it away
@@ -27,8 +27,8 @@ d = pd.DataFrame({
     "q15": col("q15", [random.choice(first) + " " + random.choice(last) for _ in range(n)], True, "Q15"),
     "q20_text": col("q20_text", [random.choice([
         f"Please call my husband {random.choice(first)} on {random.choice(phone)}", "No comment",
-        f"I live near the temple in {random.choice(vill)}, house 14", "The road is bad", "Nothing to add"]) for _ in range(n)], True, "Any other comments"),
-    "q21": col("q21", [f"{random.randint(1,300)}, Ward {random.randint(1,12)}, {random.choice(vill)}" for _ in range(n)], True, "Q21"),
+        f"I live near the temple in {random.choice(villages)}, house 14", "The road is bad", "Nothing to add"]) for _ in range(n)], True, "Any other comments"),
+    "q21": col("q21", [f"{random.randint(1,300)}, Ward {random.randint(1,12)}, {random.choice(villages)}" for _ in range(n)], True, "Q21"),
     # not personal, but names that contain a scanner keyword
     "reason_visit": col("reason_visit", [random.choice(["work", "family", "health"]) for _ in range(n)], False, "Reason for visit"),
     "season": col("season", [random.choice(["kharif", "rabi"]) for _ in range(n)], False, "Crop season"),

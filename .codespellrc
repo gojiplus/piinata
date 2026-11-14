@@ -1,0 +1,4 @@
+[codespell]
+builtin = clear,rare,en-GB_to_en-US
+skip = *.pdf,*.png,*.parquet,*.rds,*.RData,*.dta,*.xlsx,./docs,./man
+ignore-words-list = sav

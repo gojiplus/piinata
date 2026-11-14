@@ -4,3 +4,4 @@
 ^\.lintr$
 ^\.github$
 ^_pkgdown\.yml$
+^\.codespellrc$
