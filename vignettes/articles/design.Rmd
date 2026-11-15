@@ -135,6 +135,7 @@ A detector is a function from a field to zero or more findings. The core set:
 | value | IP address | `ipaddress` for validation |
 | value | date of birth: parseable dates in a plausible birth range | `lubridate` |
 | value | coordinates: numeric latitude/longitude pairs in range | base R |
+| value | addresses: two of a postcode, a house marker and an area word (street, avenue, ward, tehsil ...); postcodes for the project's `regions` | Google's address metadata, stored with the package |
 | value | phone numbers: 10 to 13 digits, graded by how they are written and how much of a column they fill; checked against libphonenumber's numbering plans for the project's `regions` | `dialtone`, when installed |
 | structure | identifier-like: nearly all values distinct | base R |
 | structure | free text: long, varied strings; value detectors then run cell by cell | base R |
@@ -147,8 +148,13 @@ Optional backends, each behind one function and one suggested package:
 
 | Backend | Adds | Requires |
 |---|---|---|
-| `use_presidio()` | person names, locations, India ids (Aadhaar, PAN, voter id), phones with region rules, in free text and columns | `reticulate`; Python packages declared with `py_require()` |
-| `use_nametagger()` | person and place names without Python | `nametagger` |
+| `use_gliner()` (planned) | a second look at columns the rules leave uncertain: names behind question numbers, names in lower case or Devanagari, place names the heuristic takes for people; votes on whole columns, never decides a cell | `reticulate`; the Python `gliner` package and the Apache-2.0 `urchade/gliner_multi_pii-v1` model, declared with `py_require()` |
+
+Presidio is not a backend: its pattern recognizers repeat what the core,
+`idcheck` and `dialtone` do, its name and place detection is whichever model
+it is given, and its table module labels a column after a single hit. It is
+run once, as a comparison. `nametagger` is not used: its only English model
+dates from 2014 and is licensed for non-commercial use.
 
 ## Output
 
@@ -189,10 +195,17 @@ A scan must be cheap enough to run on every commit.
 
 ## How we know it works
 
-1. **Benchmark, tabular.** On the benchmark in `data-raw/benchmark/` of the repository the core must catch at
-   least 11 of 12 personal columns with at most 2 false alarms among the 16
-   others, and 9 of 9 in the Qualtrics export. The same file in csv, dta, xlsx,
-   parquet, tsv and ndjson must give the same findings.
+1. **Benchmark, tabular.** The benchmark in `data-raw/benchmark/` of the
+   repository holds 17 personal columns and 25 others, with Indian and US
+   names and addresses, names in lower case and Devanagari behind question
+   numbers, and decoys: village, facility, scheme, caste, crop, city, business
+   and street names. `score_piinata.R` scores a scan at the `medium` level
+   that `pii_check()` gates on and at `low`. The core now catches 13 of 17 at
+   `medium` with no false alarms, and 15 of 17 at `low` with one (village
+   names read as person names). What it misses are names behind question
+   numbers, the job of a named-entity backend. The Qualtrics export: 6 of 9
+   at `medium`, 9 of 9 at `low`. The same file in csv, dta, xlsx, parquet, tsv
+   and ndjson must give the same findings.
 2. **Benchmark, text.** A txt, a docx and a pdf with planted emails, phones
    and dates: every planted item found, located to page or line.
 3. **Read report.** A folder holding one unreadable file and one unsupported

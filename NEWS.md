@@ -29,6 +29,12 @@
   code, and for others against the new `regions` setting in `.piinata.yml`.
   A rejected number stops counting; a column in which at least 95% of 30 or
   more judged numbers are valid moves up a grade.
+* Postal addresses are found from their values: two of a postcode, a house
+  marker and an area word. Postcode patterns for 182 countries come from
+  Google's address metadata and follow the `regions` setting.
+* The benchmark gains Indian and US names and addresses, names in lower case
+  and Devanagari, and decoy columns of place, facility, scheme, caste, crop,
+  city, business and street names; `score_piinata.R` scores a scan against it.
 * `pii_ignore_originals()` adds the originals of redacted files to
   `.gitignore`, one rule per file, checks each rule with `git check-ignore`,
   and reports originals already tracked and copies an existing rule hides.

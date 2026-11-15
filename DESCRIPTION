@@ -50,3 +50,5 @@ Config/Needs/website: rmarkdown
 Remotes: 
     gojiplus/dialtone,
     gojiplus/idcheck
+Depends: 
+    R (>= 3.5)

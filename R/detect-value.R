@@ -155,6 +155,81 @@ detect_identity_numbers <- function(values, weight) {
   found
 }
 
+# An address needs two of three cues, so a ward number, a street name or a
+# postcode alone is not one: a postcode, a house marker (a number leading a
+# street, or a word such as "house", "apt" or "plot" before a number) and an
+# area word (street, avenue, ward, tehsil, district ...). It follows Amazon
+# Macie's rule of a place plus a postcode. Address parsers (libpostal,
+# deepparse, usaddress) label any string they are given, so they cannot tell
+# whether a string is an address.
+#
+# Postcodes come from Google's address metadata (data-raw/postcodes.R) for the
+# project's `regions`; without regions, every country's pattern of five or
+# more characters is used, leaving out four-digit codes that look like years
+# and the few that would take a ten-digit phone number for a postcode.
+postcode_cache <- new.env(parent = emptyenv())
+
+postcode_cue <- function(regions) {
+  key <- paste(c("regions", sort(regions)), collapse = " ")
+  if (!exists(key, envir = postcode_cache, inherits = FALSE)) {
+    assign(key, build_postcode_cue(regions), envir = postcode_cache)
+  }
+  get(key, envir = postcode_cache, inherits = FALSE)
+}
+
+build_postcode_cue <- function(regions) {
+  rows <- if (length(regions) > 0L) {
+    postcodes[postcodes$region %in% regions, ]
+  } else {
+    shortest <- vapply(strsplit(postcodes$example, ",", fixed = TRUE), function(e) {
+      min(nchar(gsub("\\s", "", e)))
+    }, numeric(1))
+    phone <- vapply(postcodes$pattern, function(pattern) {
+      stringi::stri_detect_regex("9876543210", paste0("^(?:", pattern, ")$"))
+    }, logical(1))
+    postcodes[!is.na(shortest) & shortest >= 5 & !phone, ]
+  }
+  if (nrow(rows) == 0L) {
+    return(NULL)
+  }
+  alternatives <- paste(unique(rows$pattern), collapse = "|")
+  paste0("(?<![\\p{L}\\p{N}])(?:", alternatives, ")(?![\\p{L}\\p{N}])")
+}
+
+house_cue <- paste0(
+  "(?i)(?:^\\s*\\d+[a-z]?(?:[/-]\\w+)?\\s*(?:,|\\s+\\p{L})|(?<![\\p{L}\\p{M}])",
+  "(?:house|h\\.?\\s?no|plot|flat|door|apt|apartment|suite|ste|unit|khasra|makan|",
+  "\u092e\u0915\u093e\u0928)(?![\\p{L}\\p{M}])\\.?\\s*(?:no\\.?\\s*|#\\s*)?\\d+|",
+  "p\\.?\\s?o\\.?\\s+box\\s+\\d+)"
+)
+
+area_cue <- paste0(
+  "(?i)(?<![\\p{L}\\p{M}])(?:street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|lane|ln|",
+  "court|ct|place|pl|way|highway|hwy|parkway|pkwy|terrace|county|ward|gali|marg|mohalla|",
+  "colony|sector|village|vill|post|tehsil|taluka|taluk|district|dist|zila|block|near|chowk|",
+  "basti|tola|\u0917\u094d\u0930\u093e\u092e|\u092a\u094b\u0938\u094d\u091f|",
+  "\u091c\u093f\u0932\u093e|\u0924\u0939\u0938\u0940\u0932|\u0935\u093e\u0930\u094d\u0921)",
+  "(?![\\p{L}\\p{M}])"
+)
+
+is_address <- function(values, regions = character()) {
+  cues <- c(postcode_cue(regions), house_cue, area_cue)
+  hits <- vapply(cues, function(cue) {
+    stringi::stri_detect_regex(values, cue)
+  }, logical(length(values)))
+  rowSums(matrix(hits, nrow = length(values))) >= 2L
+}
+
+detect_addresses <- function(values, weight, free, regions) {
+  found <- is_address(values, regions)
+  n <- sum(weight[found])
+  share <- n / sum(weight)
+  if (n == 0L || (!free && (n < 5L || share < 0.5))) {
+    return(list())
+  }
+  list(finding("address", "value", "address", n, share, values[found], "medium"))
+}
+
 detect_person_names <- function(values, weight) {
   named <- stringr::str_detect(values, patterns$person)
   share <- sum(weight[named]) / sum(weight)
@@ -186,8 +261,9 @@ detect_values <- function(field, values, weight, regions = character()) {
   wordy <- stats::weighted.mean(words, weight) >= 5
   free <- field$kind == "text" || (wordy && distinct >= 0.3)
   # Sentences are searched match by match even when most rows repeat a stock answer.
-  found <- detect_patterns(values, weight, free || wordy,
-    corroborated = phone_named, regions = regions
+  found <- c(
+    detect_patterns(values, weight, free || wordy, corroborated = phone_named, regions = regions),
+    detect_addresses(values, weight, free || wordy, regions)
   )
   if (field$kind == "text") {
     return(found)

@@ -195,3 +195,30 @@ test_that("an unknown region is an error", {
   writeLines("regions: [XX]", path)
   expect_error(pii_config(path), "Unknown region")
 })
+
+test_that("addresses need two cues", {
+  addresses <- c(
+    "123 Main St, Springfield, IL 62704", "Apt 4B, 221 Baker Street, London NW1 6XE",
+    "PO Box 123, Austin TX 78701", "123, Ward 4, Palpur",
+    "House 12, Palpur, Tehsil Todabhim, District Karauli, Rajasthan 322230"
+  )
+  others <- c(
+    "Ward 4", "Main Street", "12 years in Palpur", "Survey round 2024, district Karauli",
+    "San Francisco", "call 9876543210 near road"
+  )
+  expect_true(all(is_address(addresses)))
+  expect_false(any(is_address(others)))
+})
+
+test_that("postcodes follow the project's regions", {
+  expect_true(is_address("PO Box 123, Austin TX 78701", "US"))
+  expect_false(is_address("PO Box 123, Austin TX 78701", "IN"))
+})
+
+test_that("a column of addresses is found behind a question number", {
+  withr::local_seed(3)
+  q23 <- sprintf("%d Oak Ave, Austin, TX 787%02d", sample(10:999, 40), sample(0:99, 40, TRUE))
+  findings <- pii_scan(data.frame(q23 = q23), config = pii_config("none.yml"))
+  expect_true("address" %in% findings$type)
+  expect_equal(findings$confidence[findings$type == "address"], "medium")
+})

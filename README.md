@@ -143,7 +143,7 @@ reported as unsupported, with the package to install.
   Spanish, French and Hindi, plus the fields Qualtrics, SurveyCTO and
   KoboToolbox add to exports.
 - **Values:** email addresses, phone-like numbers, IP addresses, dates of
-  birth, coordinates and person names.
+  birth, coordinates, postal addresses and person names.
 - **Behavior:** free-text answers, and text that is different on nearly every
   row.
 - **Identity numbers:** Aadhaar, GSTIN, PAN and others, when the

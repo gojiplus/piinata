@@ -52,7 +52,8 @@ remove.
 | 0.1.0 | first CRAN release, after `idcheck` | |
 | 0.3.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports; file-name scanning | |
 | 0.4.0 | pre-commit hook and GitHub Action | |
-| 0.5.0 | optional backends: Presidio, `nametagger`; comparison vignette | |
+| | address rule; benchmark decoys and US columns; `score_piinata.R` | done |
+| 0.5.0 | `use_gliner()`; Presidio comparison vignette | |
 | | phone validation with `dialtone` and a `regions` setting | done |
 | 0.6.0 | URL parts | |
 
@@ -74,6 +75,14 @@ remove.
    packages, `verhoeff` and `CheckDigit`, but both are GPL and neither is
    built for scanning a column.
 3. **Person names in values.** Without a model, the core can only say "short,
-   capitalized, mostly distinct strings", confidence low. Proposal: that, plus
-   `use_nametagger()` as the no-Python upgrade.
+   capitalized, mostly distinct strings", confidence low, and cannot tell a
+   column of names from a column of village names. Decided, after a review of
+   GLiNER, Presidio, spaCy, Flair, Stanza, IndicNER and the R routes:
+   `use_gliner()` through `reticulate::py_require()` with the Apache-2.0
+   `urchade/gliner_multi_pii-v1` model, run only on columns the rules leave
+   uncertain and voting on the share of rows, because it manages 2 to 40
+   cells a second on a CPU. Independent tests put such models at 0.4 to 0.6
+   F1 on unfamiliar text and none covers short cells, so it is trusted only
+   as far as the benchmark's decoys show. Not adopted: `nametagger` (2014
+   English model, non-commercial license) and Presidio as a backend.
 4. **The name.** `piinata` is free on CRAN and GitHub.

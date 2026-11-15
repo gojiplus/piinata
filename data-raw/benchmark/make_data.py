@@ -48,9 +48,47 @@ d = pd.DataFrame({
     "q30": col("q30", [random.choice(["Yes", "No", "Don't know"]) for _ in range(n)], False, "Q30"),
     "crop": col("crop", [random.choice(["wheat", "bajra", "mustard"]) for _ in range(n)], False, "Main crop"),
 })
+# Harder personal data: names in Devanagari or typed in lower case, and an
+# Indian postal address with its PIN code.
+deva_first = ["सुनीता", "रमेश", "गीता", "मोहम्मद", "लक्ष्मी", "अर्जुन", "पूजा", "इमरान"]
+deva_last = ["देवी", "यादव", "मीणा", "खान", "शर्मा", "पासवान", "कुमारी", "अंसारी"]
+tehsils = ["Todabhim", "Hindaun", "Nadoti", "Mandrayal", "Sapotra", "Bamanwas"]
+districts = ["Karauli", "Sawai Madhopur", "Dausa", "Jhunjhunu", "Sri Ganganagar", "Pali"]
+d["q16"] = col("q16", [f"{random.choice(deva_first)} {random.choice(deva_last)}" for _ in range(n)], True, "Q16")
+d["q17"] = col("q17", [f"{random.choice(first)} {random.choice(last)}".lower() for _ in range(n)], True, "Q17")
+d["q22"] = col("q22", [
+    f"House {random.randint(1, 300)}, {random.choice(villages)}, Tehsil {random.choice(tehsils)}, "
+    f"District {random.choice(districts)}, Rajasthan {random.randint(301001, 345034)}" for _ in range(n)], True, "Q22")
+# Decoys: Indian place, facility, scheme, caste and crop names. They are
+# capitalized, often several words, and many are distinct, so they look like
+# person names; none identifies a person.
+suffixes = ["Khurd", "Kalan", "Pura", "Nagar", "Ka Bas", "Gaon", "Dhani"]
+places = sorted({f"{v} {sfx}" for v in villages + tehsils for sfx in suffixes})
+facilities = ["Primary Health Centre", "Government Senior Secondary School", "Anganwadi Centre", "Gram Panchayat Bhawan", "Cooperative Society"]
+d["q32"] = col("q32", [random.choice(places) for _ in range(n)], False, "Q32")
+d["q33"] = col("q33", [f"{random.choice(facilities)} {random.choice(villages + tehsils)}" for _ in range(n)], False, "Q33")
+d["q34"] = col("q34", [random.choice(["Pradhan Mantri Awas Yojana", "Mahatma Gandhi NREGA", "Ujjwala Yojana", "Jan Dhan Yojana", "Kisan Samman Nidhi"]) for _ in range(n)], False, "Q34")
+d["q35"] = col("q35", [random.choice(["Meena", "Jatav", "Gurjar", "Mali", "Bairwa", "Brahmin", "Mahajan", "Saini"]) for _ in range(n)], False, "Q35")
+d["q36"] = col("q36", [random.choice(["Pusa Basmati", "Raj Vijay", "Lok One", "Giriraj Bajra", "Pusa Bold", "Varuna Mustard"]) for _ in range(n)], False, "Q36")
+d["district"] = col("district", [random.choice(districts) for _ in range(n)], False, "District")
+# United States: names and street addresses, and decoys that look like them
+# (cities, businesses, street names on their own).
+us_first = ["James", "Mary", "Robert", "Patricia", "Michael", "Jennifer", "David", "Linda", "Maria", "Jose"]
+us_last = ["Smith", "Johnson", "Williams", "Brown", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Lee"]
+streets = ["Main St", "Oak Ave", "Maple Dr", "Washington Blvd", "Park Rd", "Elm St", "Cedar Ln", "Lake Shore Dr"]
+cities = [("Springfield", "IL", "627"), ("Columbus", "OH", "432"), ("Austin", "TX", "787"), ("Fresno", "CA", "937"), ("Albany", "NY", "122")]
+def us_address():
+    city, state, zip3 = random.choice(cities)
+    unit = random.choice(["", f", Apt {random.randint(1, 30)}"])
+    return f"{random.randint(10, 9999)} {random.choice(streets)}{unit}, {city}, {state} {zip3}{random.randint(0, 99):02d}"
+d["q18"] = col("q18", [f"{random.choice(us_first)} {random.choice(us_last)}" for _ in range(n)], True, "Q18")
+d["q23"] = col("q23", [us_address() for _ in range(n)], True, "Q23")
+d["q37"] = col("q37", [f"{c}, {s}" for c, s, _ in (random.choice(cities) for _ in range(n))], False, "Q37")
+d["q38"] = col("q38", [f"{random.choice(['First National', 'Acme', 'Golden State', 'Lakeside', 'Riverside'])} {random.choice(['Bank', 'Hardware', 'Dental Group', 'Medical Center', 'Credit Union'])}" for _ in range(n)], False, "Q38")
+d["q39"] = col("q39", [random.choice(streets) for _ in range(n)], False, "Q39")
 (out / "truth.json").write_text(json.dumps(truth, indent=1))
 d.to_csv(out / "std" / "survey.csv", index=False)
-d.to_stata(out / "std" / "survey.dta", write_index=False, variable_labels={k: v["label"] for k, v in truth.items()}, version=118)
+d.to_stata(out / "std" / "survey.dta", write_index=False, variable_labels={k: v["label"] for k, v in truth.items()}, version=119)
 d.to_excel(out / "other" / "survey.xlsx", index=False)
 d.to_parquet(out / "other" / "survey.parquet", index=False)
 d.to_csv(out / "other" / "survey.tsv", index=False, sep="\t")
