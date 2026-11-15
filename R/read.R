@@ -85,8 +85,9 @@ pii_read <- function(path, ignore = character(), root = ".") {
   listed <- lapply(path[directory], function(d) {
     found <- as.character(fs::dir_ls(d, recurse = TRUE, type = "file", all = TRUE))
     parts <- strsplit(as.character(fs::path_rel(found, d)), "/", fixed = TRUE)
+    # A .git file, as in worktrees and submodules, points to a repository.
     tool <- vapply(parts, function(p) {
-      hit <- which(p[-length(p)] %in% tool_folders)
+      hit <- which(p %in% tool_folders & (seq_along(p) < length(p) | p == ".git"))
       if (length(hit) == 0L) NA_character_ else paste(p[seq_len(hit[1])], collapse = "/")
     }, character(1))
     list(files = found[is.na(tool)], tools = unique(file.path(d, stats::na.omit(tool))))

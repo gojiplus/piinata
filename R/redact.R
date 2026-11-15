@@ -61,11 +61,14 @@ span_patterns <- c(
 structure_types <- c("free_text", "unique_text")
 
 # Within free text only the matched spans are replaced, every one of them; the
-# rest of the answer is kept as it was. Matches are replaced in the raw text.
-# The scan also matches text that is obfuscated (entities, full-width
-# letters, invisible characters); a cell where such a match survives is
-# normalized, without folding its spacing, and replaced again, which changes
-# the cell's other characters too but leaves nothing behind.
+# rest of the answer is kept as it was. The scan also matches obfuscated text
+# (entities, full-width letters, invisible characters), so each cell takes
+# one of two paths, decided before anything is replaced: when its raw text
+# holds the same matches as its unfolded text, they are replaced in the raw
+# text; otherwise the cell is unfolded, without folding its spacing, and
+# replaced there, which changes its other characters too but leaves nothing
+# behind. Each cell is replaced once, so a pseudonym is never pseudonymized
+# again.
 replace_spans <- function(values, types, redact) {
   for (type in intersect(span_types, types)) {
     values <- stringr::str_replace_all(values, span_patterns[[type]], function(hit) {
@@ -84,13 +87,24 @@ unfold <- function(values) {
   stringi::stri_trans_general(values, "[:Nd:] Any-Latin")
 }
 
+# Every match in each value, of the given types, joined for comparison.
+all_matches <- function(values, types) {
+  out <- rep("", length(values))
+  for (type in intersect(span_types, types)) {
+    hits <- stringr::str_extract_all(values, span_patterns[[type]])
+    out <- paste(out, vapply(hits, function(h) {
+      paste(h[!is.na(matched(h, type))], collapse = "\u0001")
+    }, character(1)), sep = "\u0002")
+  }
+  out
+}
+
 redact_spans <- function(values, types, redact) {
-  replaced <- replace_spans(values, types, redact)
-  clean <- unfold(replaced)
-  marker <- function(x, type) rep("\u0001", length(x))
-  left <- !is.na(clean) & replace_spans(clean, types, marker) != clean
-  replaced[left] <- replace_spans(clean[left], types, redact)
-  replaced
+  clean <- unfold(values)
+  same <- is.na(values) | all_matches(values, types) == all_matches(clean, types)
+  values[same] <- replace_spans(values[same], types, redact)
+  values[!same] <- replace_spans(clean[!same], types, redact)
+  values
 }
 
 #' Redact the fields a scan flagged

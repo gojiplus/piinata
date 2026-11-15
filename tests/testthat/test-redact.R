@@ -127,3 +127,17 @@ test_that("a card number in free text is a financial account, redacted whole (C1
   expect_false("phone" %in% found$type)
   expect_equal(pii_redact(data, found)$note[21], "card <FINANCIAL_ACCOUNT> thanks for the help")
 })
+
+test_that("an email split by an invisible character is redacted whole (R2)", {
+  filler <- paste("The road near house", 1:20, "is bad after the long rains this year")
+  data <- data.frame(note = c(filler, "mail jo​hn@example.org now"))
+  expect_equal(pii_redact(data)$note[21], "mail <EMAIL> now")
+})
+
+test_that("pseudonyms in sentences equal pseudonyms of the same value alone (R3)", {
+  emails <- paste0("p", 1:6, "@example.org")
+  filler <- paste("The road near house", 1:14, "is bad after the long rains this year")
+  partial <- data.frame(note = c(emails, filler))
+  clean <- pii_redact(partial, method = "pseudonym", key = "k")
+  expect_equal(clean$note[1:6], pseudonym(emails, "k"))
+})

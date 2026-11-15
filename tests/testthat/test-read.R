@@ -173,3 +173,13 @@ test_that("Excel numbers keep their digits (N4)", {
   expect_equal(fields$values[[1]], c("100000", "200000", "110001"))
   expect_equal(fields$values[[2]][1], "1980-01-01")
 })
+
+test_that("a .git file, as in worktrees and submodules, is ignored (R1)", {
+  dir <- withr::local_tempdir()
+  fs::dir_create(file.path(dir, "w"))
+  writeLines("gitdir: /elsewhere/.git/worktrees/w", file.path(dir, "w", ".git"))
+  writeLines("asha@example.org", file.path(dir, "w", "notes.txt"))
+  report <- pii_read_report(pii_read(dir))
+  expect_equal(report$status[basename(report$source) == ".git"], "ignored")
+  expect_false(any(report$status %in% c("unsupported", "failed")))
+})

@@ -26,6 +26,9 @@ is_phone_like <- function(candidate) {
 # Each detector sees the distinct values of a field and how often each occurs,
 # so a coded column with a million rows costs as much as its handful of codes.
 matched <- function(values, type) {
+  if (length(values) == 0L) {
+    return(character())
+  }
   switch(type,
     email = stringr::str_extract(values, patterns$email),
     financial_account = {
