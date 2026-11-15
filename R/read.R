@@ -5,6 +5,12 @@ delimited_extensions <- c("csv", "tsv", "tab", "psv")
 # "survey.csv.gz" is a csv. Other compressed files, and archives, are of type
 # "archive" and are read member by member.
 file_type <- function(path) {
+  # A dotfile's name is its type: ".Rhistory" is an R history, ".env" a list
+  # of settings.
+  name <- basename(path)
+  if (startsWith(name, ".") && !grepl(".", substring(name, 2L), fixed = TRUE)) {
+    return(tolower(substring(name, 2L)))
+  }
   packed <- tolower(fs::path_ext(path)) %in% compression_extensions
   extension <- tolower(fs::path_ext(if (packed) fs::path_ext_remove(path) else path))
   if (packed && !extension %in% delimited_extensions) {
@@ -54,6 +60,8 @@ read_one <- function(path, registry) {
 #'
 #' @param path Files or directories. Directories are searched recursively.
 #' @param ignore Globs of files not to read. They are reported as `ignored`.
+#' @param root The folder `ignore` globs are relative to, normally the one
+#'   holding `.piinata.yml`.
 #' @return A tibble of fields; see [as_pii_fields()].
 #' @export
 #' @examples
@@ -62,7 +70,7 @@ read_one <- function(path, registry) {
 #' fields <- pii_read(file)
 #' fields
 #' pii_read_report(fields)
-pii_read <- function(path, ignore = character()) {
+pii_read <- function(path, ignore = character(), root = ".") {
   if (!is.character(path) || length(path) == 0L) {
     cli::cli_abort("{.arg path} must be a character vector of files or directories.")
   }
@@ -71,12 +79,16 @@ pii_read <- function(path, ignore = character()) {
     cli::cli_abort("Cannot find {.file {missing}}.")
   }
   directory <- fs::is_dir(path)
+  # Hidden files are read too: .Rhistory and .env files hold personal data
+  # as often as anything. A repository's .git folder is version control's own
+  # store, not the project's files.
   files <- c(path[!directory], unlist(lapply(path[directory], function(d) {
-    as.character(fs::dir_ls(d, recurse = TRUE, type = "file"))
+    found <- as.character(fs::dir_ls(d, recurse = TRUE, type = "file", all = TRUE))
+    found[!grepl("(^|/)\\.git(/|$)", as.character(fs::path_rel(found, d)))]
   })))
   files <- unique(as.character(files))
   registry <- readers()
-  skipped <- matches_glob(files, ignore)
+  skipped <- matches_glob(files, ignore, root)
   results <- unlist(lapply(seq_along(files), function(i) {
     if (skipped[i]) {
       return(list(list(
@@ -84,7 +96,7 @@ pii_read <- function(path, ignore = character()) {
         detail = "listed under ignore"
       )))
     }
-    read_path(files[i], registry, ignore)
+    read_path(files[i], registry, ignore, root = root)
   }), recursive = FALSE)
   fields <- do.call(rbind, c(list(new_fields()), lapply(results, `[[`, "fields")))
   attr(fields, "read_report") <- tibble::tibble(

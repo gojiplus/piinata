@@ -36,8 +36,8 @@ and they judge a column by its name, so an email address in a column called
    text); what it contains (values); how it behaves (uniqueness, free text).
    A finding says which kind it rests on.
 4. **Quiet by default.** A finding needs a share of matching values, not one
-   stray hit, and names are matched on whole words. Every rule can be turned
-   off, and any field can be allowlisted.
+   stray hit, and names are matched on whole words. Any field, type of
+   finding or file can be allowed, with a reason, in `.piinata.yml`.
 5. **The scanner must not leak.** Example values in reports are masked unless
    asked for. The core makes no network calls.
 6. **A small core, optional backends.** The core installs with no Python, no
@@ -127,9 +127,13 @@ SurveyMonkey and Google Forms headers, and the file names themselves, which
 often carry a respondent's name. Legacy .doc files need an external converter
 and are reported as unsupported.
 
+Hidden files are read: `.Rhistory` and `.env` files hold personal data as
+often as anything. A repository's `.git` folder is left out, and macOS's
+`.DS_Store` files are reported as ignored.
+
 Not in the first release: images and scanned PDFs (would use `tesseract`),
-email archives, databases, live survey-platform APIs (`rsurveycto`,
-`robotoolbox` exist and can be added as readers later).
+Outlook `.pst` and `.msg` files, live databases, and live survey-platform
+APIs (`rsurveycto`, `robotoolbox` exist and can be added as readers later).
 
 ## Detection
 
@@ -182,7 +186,9 @@ Around it:
 - `pii_summary(findings)` gives one row per field with the strongest evidence.
 - `pii_check(findings, allow = )` errors when anything unallowed remains, so a
   script or CI job can gate on it.
-- `pii_detectors()` lists the registry; `pii_detector()` builds a custom one.
+- A project's own identifiers are declared as patterns in `.piinata.yml`
+  (see `pii_config()`): a regex or a word list, with optional context words,
+  exclusions and a check-digit validation.
 
 Function names share the `pii_` prefix, except where R has a convention of
 its own: `as_pii_fields()` converts, as `as_*()` functions do, and

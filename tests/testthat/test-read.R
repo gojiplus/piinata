@@ -112,3 +112,43 @@ test_that("compressed delimited files and R workspaces are read", {
   expect_equal(report$status, "read")
   expect_match(report$source, "notes.txt.gz!notes.txt", fixed = TRUE)
 })
+
+test_that("hidden files are read, and .git is left out (D5)", {
+  dir <- withr::local_tempdir()
+  writeLines("asha@example.org ravi@example.org", file.path(dir, ".Rhistory"))
+  writeLines("SECRET_EMAIL=asha@example.org", file.path(dir, ".env"))
+  fs::dir_create(file.path(dir, ".secret"))
+  writeLines("asha@example.org", file.path(dir, ".secret", "notes.txt"))
+  fs::dir_create(file.path(dir, ".git"))
+  writeLines("ref: refs/heads/main", file.path(dir, ".git", "HEAD"))
+  report <- pii_read_report(pii_read(dir))
+  expect_setequal(basename(report$source), c(".Rhistory", ".env", "notes.txt"))
+  expect_true(all(report$status == "read"))
+})
+
+test_that("Excel dates are read as dates (D7)", {
+  skip_if_not_installed("writexl")
+  path <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(data.frame(q7 = as.Date("1980-01-01") + (0:29) * 211), path)
+  expect_equal(pii_read(path)$values[[1]][1], "1980-01-01")
+  expect_true("date_of_birth" %in% pii_scan(path, config = pii_config("none.yml"))$type)
+})
+
+test_that("objects with hidden names in RData files are read (D8)", {
+  path <- withr::local_tempfile(fileext = ".RData")
+  .hid <- data.frame(email = paste0("p", 1:20, "@example.org"))
+  vis <- data.frame(x = 1:20)
+  save(.hid, vis, file = path)
+  expect_true(".hid!email" %in% pii_read(path)$locator)
+})
+
+test_that("gzip bombs are stopped before they fill the disk (D12)", {
+  path <- withr::local_tempfile(fileext = ".txt.gz")
+  connection <- gzfile(path, "w")
+  writeLines(strrep("a", 5000), connection)
+  close(connection)
+  withr::local_options(piinata.max_unpacked = 1000)
+  report <- pii_read_report(pii_read(path))
+  expect_equal(report$status, "unsupported")
+  expect_match(report$detail, "more than")
+})

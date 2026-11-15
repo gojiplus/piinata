@@ -62,6 +62,20 @@ First release.
   ("21st") no longer look like phones and streets; address cues must sit
   within 40 characters of each other; and a birth date read from values alone
   is `low` until the column's name agrees.
+* Fixes from an independent review before release: redaction finds and
+  replaces matches in the normalized text the scan matched, so obfuscated and
+  full-width emails no longer survive it; pseudonyms are drawn from SHA-256,
+  not R's random-number generator, so they are the same in every session,
+  collide rarely, and replace letters of every script; hidden files are read
+  (`.git` is left out); Excel dates are read as dates; RData objects with
+  hidden names are kept; `.xlsm` files are redacted to xlsx; `ignore` and
+  `allow` globs are relative to the folder of `.piinata.yml` and match file
+  names with regex characters; YAML's `NO` and `yes` are read as words; the
+  unpacking limit covers gzip, bzip2, xz and compressed tar files
+  (`options(piinata.max_unpacked = )`); redaction follows the
+  configuration's `min_confidence`; card numbers in free text are found as
+  `financial_account`; text files keep their line endings; and two files
+  that would write the same redacted copy are both reported. Requires R 4.5.
 * Names settled before the first release. A finding's `type` is the kind of
   personal data and `detector` the rule that matched: identity numbers are
   `government_id` with detector `idcheck:<scheme>` (was the scheme as type),

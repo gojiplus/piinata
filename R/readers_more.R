@@ -153,6 +153,7 @@ read_pptx_file <- function(path) {
 
 more_readers <- function() {
   shapefile_parts <- c("shx", "prj", "cpg", "sbn", "sbx", "qix")
+  ignored <- list(ds_store = function(path) ignore_file("macOS folder metadata"))
   c(
     list(
       ipynb = read_notebook, geojson = read_geojson, kml = read_kml,
@@ -166,6 +167,7 @@ more_readers <- function() {
     stats::setNames(
       rep(list(function(path) ignore_file("part of a shapefile")), length(shapefile_parts)),
       shapefile_parts
-    )
+    ),
+    ignored
   )
 }

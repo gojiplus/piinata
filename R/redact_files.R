@@ -30,7 +30,8 @@ redacted_path <- function(path, suffix) {
   packed <- tolower(fs::path_ext(path)) %in% compression_extensions
   inner <- if (packed) fs::path_ext_remove(path) else path
   extension <- fs::path_ext(inner)
-  if (tolower(extension) == "xls") {
+  # writexl writes plain workbooks: macros in an xlsm are not carried over.
+  if (tolower(extension) %in% c("xls", "xlsm")) {
     extension <- "xlsx"
   }
   stem <- fs::path_ext_remove(inner)
@@ -38,10 +39,12 @@ redacted_path <- function(path, suffix) {
   as.character(if (packed) paste0(out, ".", fs::path_ext(path)) else out)
 }
 
-is_redacted_copy <- function(path, suffix) {
-  packed <- tolower(fs::path_ext(path)) %in% compression_extensions
-  inner <- if (packed) fs::path_ext_remove(path) else path
-  endsWith(fs::path_ext_remove(basename(inner)), suffix)
+# A file is a redacted copy when another file in the same scan would be
+# redacted to it; "survey_redacted.csv" with no "survey.csv" beside it is an
+# original.
+is_redacted_copy <- function(path, suffix, sources) {
+  others <- setdiff(sources, path)
+  any(vapply(others, redacted_path, character(1), suffix = suffix) == path)
 }
 
 # The findings for one table of a file: a sheet of a workbook, an object in an
@@ -121,7 +124,7 @@ redact_rdata <- function(path, destination, findings, options) {
   objects <- new.env()
   load(path, envir = objects)
   actions <- list()
-  for (name in ls(objects)) {
+  for (name in ls(objects, all.names = TRUE)) {
     object <- get(name, envir = objects)
     if (is.data.frame(object)) {
       result <- redact_table(object, table_findings(findings, name), options)
@@ -129,7 +132,7 @@ redact_rdata <- function(path, destination, findings, options) {
       actions <- c(actions, list(result$actions))
     }
   }
-  save(list = ls(objects), envir = objects, file = destination)
+  save(list = ls(objects, all.names = TRUE), envir = objects, file = destination)
   do.call(rbind, actions)
 }
 
@@ -169,8 +172,10 @@ redact_lines <- function(lines, findings, options) {
 
 redact_text <- function(path, destination, findings, options) {
   lines <- readr::read_lines(path, na = character(), progress = FALSE)
+  head <- readBin(path, "raw", 65536L)
+  crlf <- length(grepRaw(as.raw(c(0x0d, 0x0a)), head)) > 0L
   result <- redact_lines(lines, findings, options)
-  readr::write_lines(result$lines, destination)
+  readr::write_lines(result$lines, destination, sep = if (crlf) "\r\n" else "\n")
   result$actions
 }
 
@@ -179,7 +184,7 @@ writers <- function() {
     stats::setNames(rep(list(redact_delim), length(delimited_extensions)), delimited_extensions),
     stats::setNames(rep(list(redact_text), length(text_extensions)), text_extensions),
     list(
-      xlsx = redact_excel, xls = redact_excel,
+      xlsx = redact_excel, xls = redact_excel, xlsm = redact_excel,
       dta = redact_haven(haven::read_dta, haven::write_dta),
       sav = redact_haven(haven::read_sav, haven::write_sav),
       zsav = redact_haven(haven::read_sav, function(data, path) {
@@ -195,11 +200,11 @@ file_row <- function(source, status, destination = NA_character_, detail = NA_ch
   tibble::tibble(source = source, status = status, destination = destination, detail = detail)
 }
 
-redact_one <- function(source, read_status, findings, options, registry) {
+redact_one <- function(source, read_status, findings, options, registry, sources, claimed) {
   if (read_status != "read") {
     return(file_row(source, "not read", detail = paste("the scan could not read it:", read_status)))
   }
-  if (is_redacted_copy(source, options$suffix)) {
+  if (is_redacted_copy(source, options$suffix, sources)) {
     return(file_row(source, "skipped", detail = "a redacted copy"))
   }
   flagged <- findings[findings$source == source, ]
@@ -220,6 +225,12 @@ redact_one <- function(source, read_status, findings, options, registry) {
     return(file_row(source, "unsupported", detail = unwritable[[type]]))
   }
   destination <- redacted_path(source, options$suffix)
+  if (destination %in% names(claimed)) {
+    return(file_row(source, "failed", destination,
+      detail = paste("the same redacted copy is written for", claimed[[destination]])
+    ))
+  }
+  assign(destination, source, envir = claimed)
   if (fs::file_exists(destination) && !options$overwrite) {
     return(file_row(source, "failed", destination,
       detail = "the redacted copy exists; set `overwrite = TRUE` to replace it"
@@ -302,10 +313,11 @@ redact_one <- function(source, read_status, findings, options, registry) {
 #' report
 #' read.csv(file.path(dir, "survey_redacted.csv"))[1:3, ]
 pii_redact_files <- function(path, findings = pii_scan(path, config = config),
-                             method = "placeholder", key = NULL, min_confidence = "medium",
+                             method = "placeholder", key = NULL, min_confidence = NULL,
                              suffix = "_redacted", overwrite = FALSE, config = pii_config()) {
   check_method(method, key)
-  min_confidence <- rlang::arg_match0(min_confidence, confidence_levels, "min_confidence")
+  scan_config <- attr(findings, "config", exact = TRUE)
+  min_confidence <- gate(min_confidence, if (is.null(scan_config)) config else scan_config)
   if (!rlang::is_string(suffix) || !nzchar(suffix)) {
     cli::cli_abort("{.arg suffix} must be a non-empty string.")
   }
@@ -313,14 +325,16 @@ pii_redact_files <- function(path, findings = pii_scan(path, config = config),
   if (is.null(report)) {
     cli::cli_abort("{.arg findings} must come from a scan of files, not of a data frame.")
   }
-  scan_config <- attr(findings, "config", exact = TRUE)
   options <- list(
     method = method, key = key, min_confidence = min_confidence, suffix = suffix,
     overwrite = overwrite, config = if (is.null(scan_config)) config else scan_config
   )
   registry <- writers()
+  claimed <- new.env()
   rows <- lapply(seq_len(nrow(report)), function(i) {
-    redact_one(report$source[i], report$status[i], findings, options, registry)
+    redact_one(
+      report$source[i], report$status[i], findings, options, registry, report$source, claimed
+    )
   })
   result <- do.call(rbind, c(list(file_row(character(), character())), rows))
   cli::cli_inform(c(

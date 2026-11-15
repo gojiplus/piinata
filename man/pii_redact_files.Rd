@@ -9,7 +9,7 @@ pii_redact_files(
   findings = pii_scan(path, config = config),
   method = "placeholder",
   key = NULL,
-  min_confidence = "medium",
+  min_confidence = NULL,
   suffix = "_redacted",
   overwrite = FALSE,
   config = pii_config()
@@ -27,7 +27,8 @@ the method per finding type, with an optional \code{default}.}
 \code{"pseudonym"}. Keep it out of the shared files; use the same key to redact
 files that must still join.}
 
-\item{min_confidence}{The weakest findings to act on.}
+\item{min_confidence}{The weakest findings to act on; the configuration's
+\code{min_confidence}, or \code{"medium"}, unless given.}
 
 \item{suffix}{Added to a file's name to name its redacted copy.}
 

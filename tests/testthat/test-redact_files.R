@@ -82,3 +82,48 @@ test_that("compressed csv keeps its compression and name", {
 test_that("findings from a data frame are refused", {
   expect_error(pii_redact_files("x", findings = pii_scan(people())), "scan of files")
 })
+
+test_that("xlsm files are redacted to xlsx (D6)", {
+  skip_if_not_installed("writexl")
+  dir <- withr::local_tempdir()
+  writexl::write_xlsx(people(), file.path(dir, "book.xlsx"))
+  file.rename(file.path(dir, "book.xlsx"), file.path(dir, "book.xlsm"))
+  report <- suppressMessages(pii_redact_files(dir))
+  expect_equal(report$status, "redacted")
+  expect_equal(basename(report$destination), "book_redacted.xlsx")
+})
+
+test_that("RData objects with hidden names survive redaction (D8)", {
+  dir <- withr::local_tempdir()
+  .hid <- data.frame(x = 1:3)
+  vis <- people()
+  save(.hid, vis, file = file.path(dir, "o.RData"))
+  report <- suppressMessages(pii_redact_files(dir))
+  copy <- new.env()
+  load(report$destination, envir = copy)
+  expect_setequal(ls(copy, all.names = TRUE), c(".hid", "vis"))
+})
+
+test_that("text files keep their line endings (C2)", {
+  dir <- withr::local_tempdir()
+  writeBin(charToRaw("Mail asha@example.org\r\nDone.\r\n"), file.path(dir, "n.txt"))
+  report <- suppressMessages(pii_redact_files(dir))
+  expect_equal(rawToChar(readBin(report$destination, "raw", 100)), "Mail <EMAIL>\r\nDone.\r\n")
+})
+
+test_that("an original named like a copy is redacted when no original sits beside it (C5)", {
+  dir <- withr::local_tempdir()
+  readr::write_csv(people(), file.path(dir, "survey_redacted.csv"))
+  report <- suppressMessages(pii_redact_files(dir))
+  expect_equal(report$status, "redacted")
+})
+
+test_that("two files that would write the same copy are both reported (C6)", {
+  skip_if_not_installed("writexl")
+  dir <- withr::local_tempdir()
+  writexl::write_xlsx(people(), file.path(dir, "s.xlsx"))
+  file.copy(file.path(dir, "s.xlsx"), file.path(dir, "s.xlsm"))
+  report <- suppressMessages(pii_redact_files(dir))
+  expect_equal(sort(report$status), c("failed", "redacted"))
+  expect_match(report$detail[report$status == "failed"], "same redacted copy")
+})

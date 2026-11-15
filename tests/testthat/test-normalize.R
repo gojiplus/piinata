@@ -24,3 +24,7 @@ test_that("HTML character references are decoded", {
     c("info@example.org", "a@b.org", "Tom & Jerry", "&#0;")
   )
 })
+
+test_that("upper-case hexadecimal references are decoded (C7)", {
+  expect_equal(normalize_values("a&#X40;b.org"), "a@b.org")
+})

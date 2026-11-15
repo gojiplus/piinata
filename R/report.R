@@ -62,7 +62,7 @@ pii_check <- function(findings, allow = character(), min_confidence = NULL, conf
   min_confidence <- rlang::arg_match(min_confidence, levels)
   graded <- match(findings$confidence, levels) >= match(min_confidence, levels)
   allowed <- findings$name %in% allow | findings$locator %in% allow |
-    allowed_by(findings, config$allow)
+    allowed_by(findings, config$allow, config_root(config))
   open <- findings[graded & !allowed, ]
   if (nrow(open) > 0L) {
     cli::cli_abort(c(

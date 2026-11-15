@@ -168,3 +168,42 @@ test_that("context words of custom patterns lift their findings", {
   expect_equal(grade(data.frame(q1 = ids)), "low")
   expect_equal(grade(data.frame(respondent_code = ids)), "medium")
 })
+
+test_that("ignore and allow globs hold whatever path the scan was given (D9)", {
+  root <- withr::local_tempdir()
+  fs::dir_create(file.path(root, "data", "raw"))
+  utils::write.csv(data.frame(e = paste0("p", 1:20, "@example.org")),
+    file.path(root, "data", "raw", "a.csv"),
+    row.names = FALSE
+  )
+  writeLines(c("ignore:", "  - data/raw/*"), file.path(root, ".piinata.yml"))
+  config <- pii_config(file.path(root, ".piinata.yml"))
+  report <- pii_read_report(pii_scan(file.path(root, "data"), config = config))
+  expect_equal(report$status, "ignored")
+})
+
+test_that("recorded sources match file names with regex characters (D10)", {
+  root <- withr::local_tempdir()
+  utils::write.csv(data.frame(email = paste0("p", 1:20, "@example.org")),
+    file.path(root, "a+b.csv"),
+    row.names = FALSE
+  )
+  findings <- pii_scan(file.path(root, "a+b.csv"), config = pii_config("none.yml"))
+  review <- file.path(root, "review.csv")
+  suppressMessages(pii_review(findings, review))
+  decisions <- utils::read.csv(review)
+  decisions$decision <- "allow"
+  decisions$reason <- "test"
+  utils::write.csv(decisions, review, row.names = FALSE)
+  config <- suppressMessages(pii_accept(review, file.path(root, ".piinata.yml")))
+  expect_no_error(pii_check(findings, config = config))
+})
+
+test_that("YAML 1.1 booleans are read as the words they are (D11)", {
+  skip_if_not_installed("dialtone")
+  path <- withr::local_tempfile(fileext = ".yml")
+  writeLines(c("regions: [NO, IN]", "terms:", "  person_name: [no, yes]"), path)
+  config <- pii_config(path)
+  expect_equal(config$regions, c("NO", "IN"))
+  expect_equal(config$terms$person_name, c("no", "yes"))
+})

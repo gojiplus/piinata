@@ -32,13 +32,28 @@ read_delim_file <- function(path, delim) {
   fields_from_table(data, path)
 }
 
+# Each cell is read with its own type, so a date stays a date: read as text,
+# Excel gives a date's serial number ("29221").
+excel_cell <- function(cell) {
+  if (is.null(cell) || length(cell) == 0L || is.na(cell[[1]])) {
+    return(NA_character_)
+  }
+  value <- cell[[1]]
+  if (inherits(value, "POSIXt")) {
+    timed <- format(value, "%H:%M:%S", tz = "UTC") != "00:00:00"
+    return(format(value, if (timed) "%Y-%m-%d %H:%M:%S" else "%Y-%m-%d", tz = "UTC"))
+  }
+  as.character(value)
+}
+
 read_excel_file <- function(path) {
   sheets <- readxl::excel_sheets(path)
   fields <- lapply(sheets, function(sheet) {
     data <- readxl::read_excel(
       path,
-      sheet = sheet, col_types = "text", .name_repair = "unique_quiet"
+      sheet = sheet, col_types = "list", .name_repair = "unique_quiet"
     )
+    data[] <- lapply(data, function(column) vapply(column, excel_cell, character(1)))
     fields_from_table(data, path, sheet = sheet)
   })
   do.call(rbind, fields)
@@ -73,7 +88,7 @@ read_rds_file <- function(path) {
 read_rdata_file <- function(path) {
   objects <- new.env()
   load(path, envir = objects)
-  fields <- lapply(ls(objects), function(name) {
+  fields <- lapply(ls(objects, all.names = TRUE), function(name) {
     object <- get(name, envir = objects)
     if (is.data.frame(object)) fields_from_table(object, path, sheet = name) else new_fields()
   })
@@ -118,7 +133,8 @@ read_html_file <- function(path) {
 text_extensions <- c(
   "txt", "md", "log", "do", "ado", "r", "rmd", "qmd", "rhistory", "py", "jl", "m", "sas", "sps",
   "lst", "sh", "tex", "bib", "smcl", "sql", "yaml", "yml", "toml", "ini", "cfg", "xml",
-  "vcf", "eml", "mbox", "ics", "srt", "vtt"
+  "vcf", "eml", "mbox", "ics", "srt", "vtt", "env", "netrc", "bash_history", "zsh_history",
+  "gitignore", "rbuildignore", "lintr", "gitattributes", "renviron", "rprofile"
 )
 
 readers <- function() {

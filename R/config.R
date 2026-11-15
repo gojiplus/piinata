@@ -1,15 +1,41 @@
 confidence_levels <- c("low", "medium", "high")
 
-matches_glob <- function(x, globs) {
-  if (length(globs) == 0L) {
+# A glob as a regular expression: `*` is any run of characters, `?` any one,
+# and everything else stands for itself, so "a+b.csv" matches only itself.
+# utils::glob2rx() leaves +, ^, $ and | as regex operators.
+glob_regex <- function(glob) {
+  pattern <- gsub("([.+^$|(){}\\[\\]\\\\])", "\\\\\\1", glob, perl = TRUE)
+  pattern <- gsub("*", ".*", pattern, fixed = TRUE)
+  paste0("^", gsub("?", ".", pattern, fixed = TRUE), "$")
+}
+
+# A glob in .piinata.yml names paths relative to the folder the file is in,
+# so it holds whether a scan is given "data", "./data" or an absolute path.
+# A glob also matches a bare file name.
+matches_glob <- function(x, globs, root = ".") {
+  if (length(globs) == 0L || length(x) == 0L) {
     return(rep(FALSE, length(x)))
   }
-  paths <- sub("^\\./", "", x)
+  inside <- sub("^([^!]*).*$", "\\1", x)
+  relative <- as.character(fs::path_rel(fs::path_abs(inside), fs::path_abs(root)))
+  relative <- paste0(relative, substring(x, nchar(inside) + 1L))
+  forms <- list(sub("^\\./", "", x), relative, basename(x))
   hits <- vapply(globs, function(glob) {
-    pattern <- utils::glob2rx(sub("^\\./", "", glob))
-    grepl(pattern, paths) | grepl(pattern, basename(paths))
+    pattern <- glob_regex(sub("^\\./", "", glob))
+    Reduce(`|`, lapply(forms, function(form) grepl(pattern, form)))
   }, logical(length(x)))
   rowSums(matrix(hits, nrow = length(x))) > 0
+}
+
+config_root <- function(config) {
+  if (is.null(config$path)) "." else dirname(config$path)
+}
+
+# YAML 1.1 reads NO, yes and on as booleans; in a region list or a word list
+# they are words ("NO" is Norway).
+read_config_yaml <- function(path) {
+  keep <- function(x) x
+  yaml::read_yaml(path, handlers = list("bool#yes" = keep, "bool#no" = keep))
 }
 
 check_allow <- function(rule, path) {
@@ -128,7 +154,7 @@ pii_config <- function(path = ".piinata.yml") {
   if (!fs::file_exists(path)) {
     return(structure(config, class = "pii_config"))
   }
-  raw <- yaml::read_yaml(path)
+  raw <- read_config_yaml(path)
   unknown <- setdiff(names(raw), names(config))
   if (length(unknown) > 0L) {
     cli::cli_abort(
@@ -163,7 +189,7 @@ check_regions <- function(regions, path) {
   regions
 }
 
-allowed_by <- function(findings, rules) {
+allowed_by <- function(findings, rules, root = ".") {
   allowed <- rep(FALSE, nrow(findings))
   for (rule in rules) {
     match <- rep(TRUE, nrow(findings))
@@ -174,7 +200,7 @@ allowed_by <- function(findings, rules) {
       match <- match & findings$type %in% rule$type
     }
     if (!is.null(rule$source)) {
-      match <- match & matches_glob(findings$source, rule$source)
+      match <- match & matches_glob(findings$source, rule$source, root)
     }
     allowed <- allowed | match
   }

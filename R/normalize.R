@@ -13,7 +13,7 @@ decode_references <- function(values) {
   if (!any(coded)) {
     return(values)
   }
-  reference <- "&#(x?)([0-9A-Fa-f]{1,6});"
+  reference <- "&#([xX]?)([0-9A-Fa-f]{1,6});"
   values[coded] <- stringr::str_replace_all(values[coded], reference, function(ref) {
     hex <- grepl("^&#x", ref, ignore.case = TRUE)
     digits <- sub("^&#x?", "", sub(";$", "", ref), ignore.case = TRUE)

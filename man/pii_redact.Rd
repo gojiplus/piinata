@@ -9,7 +9,7 @@ pii_redact(
   findings = pii_scan(data),
   method = "placeholder",
   key = NULL,
-  min_confidence = "medium"
+  min_confidence = NULL
 )
 }
 \arguments{
@@ -24,7 +24,8 @@ the method per finding type, with an optional \code{default}.}
 \code{"pseudonym"}. Keep it out of the shared files; use the same key to redact
 files that must still join.}
 
-\item{min_confidence}{The weakest findings to act on.}
+\item{min_confidence}{The weakest findings to act on; the configuration's
+\code{min_confidence}, or \code{"medium"}, unless given.}
 }
 \value{
 \code{data} with the flagged columns redacted, and the actions taken as

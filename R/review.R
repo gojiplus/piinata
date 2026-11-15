@@ -62,7 +62,7 @@ pii_accept <- function(file = "piinata-review.csv", config = ".piinata.yml") {
   rules <- lapply(seq_len(nrow(allowed)), function(i) {
     list(field = allowed$locator[i], source = allowed$source[i], reason = allowed$reason[i])
   })
-  raw <- if (fs::file_exists(config)) yaml::read_yaml(config) else list()
+  raw <- if (fs::file_exists(config)) read_config_yaml(config) else list()
   raw$allow <- unique(c(raw$allow, rules))
   yaml::write_yaml(raw, config)
   cli::cli_inform("Recorded {length(rules)} allowed field{?s} in {.file {config}}.")

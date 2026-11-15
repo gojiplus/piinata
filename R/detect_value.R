@@ -2,6 +2,7 @@ patterns <- list(
   email = "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}",
   phone = "(?<![\\d.])\\+?\\d[\\d\\s().-]{8,16}\\d(?!\\d)",
   ipv4 = "(?<![\\d.])\\d{1,3}(?:\\.\\d{1,3}){3}(?![\\d.])",
+  card = "(?<![\\d-])\\d(?:[ -]?\\d){11,18}(?![\\d-])",
   person = "^\\p{Lu}[\\p{L}'.-]+(?:\\s+\\p{Lu}[\\p{L}'.-]+){1,3}$"
 )
 
@@ -27,10 +28,27 @@ is_phone_like <- function(candidate) {
 matched <- function(values, type) {
   switch(type,
     email = stringr::str_extract(values, patterns$email),
+    financial_account = {
+      candidate <- stringr::str_extract(values, patterns$card)
+      cards <- rlang::is_installed("idcheck") &&
+        "intl_payment_card" %in% idcheck::id_schemes()$scheme
+      if (cards) {
+        valid <- idcheck::id_valid(ifelse(is.na(candidate), "", candidate), "intl_payment_card")
+        ifelse(valid, candidate, NA_character_)
+      } else {
+        rep(NA_character_, length(values))
+      }
+    },
     phone = {
       # Digits in a web address are paths and ids, not phone numbers:
-      # "//cdn.shopify.com/s/files/1/0077/2888/9892/...".
+      # "//cdn.shopify.com/s/files/1/0077/2888/9892/...". Nor are the digits
+      # of a card number.
       outside <- stringr::str_replace_all(values, "(?i)(?:https?:)?//\\S+|\\bwww\\.\\S+", " ")
+      cards <- matched(outside, "financial_account")
+      has_card <- !is.na(cards)
+      outside[has_card] <- stringr::str_replace_all(
+        outside[has_card], stringr::fixed(cards[has_card]), " "
+      )
       candidate <- stringr::str_extract(outside, patterns$phone)
       ifelse(is_phone_like(candidate), candidate, NA_character_)
     },
@@ -360,8 +378,11 @@ detect_values <- function(field, values, weight, regions = character()) {
   wordy <- stats::weighted.mean(words, weight) >= 5
   free <- field$kind == "text" || (wordy && distinct >= 0.3)
   # Sentences are searched match by match even when most rows repeat a stock answer.
+  # In sentences, card numbers are found match by match too; a column of
+  # them is judged by idcheck below.
+  types <- c("email", "phone", "ip_address", if (free || wordy) "financial_account")
   found <- c(
-    detect_patterns(values, weight, free || wordy, corroborated = phone_named, regions = regions),
+    detect_patterns(values, weight, free || wordy, types, phone_named, regions),
     detect_addresses(values, weight, free || wordy, regions)
   )
   if (field$kind == "text") {

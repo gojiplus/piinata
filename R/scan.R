@@ -124,7 +124,7 @@ pii_scan <- function(x, show_values = FALSE, sample = NULL, config = pii_config(
   } else if (is.data.frame(x)) {
     fields <- as_pii_fields(x)
   } else if (is.character(x)) {
-    fields <- pii_read(x, ignore = config$ignore)
+    fields <- pii_read(x, ignore = config$ignore, root = config_root(config))
   } else {
     cli::cli_abort("{.arg x} must be paths, a data frame or fields, not {.obj_type_friendly {x}}.")
   }

@@ -79,3 +79,51 @@ test_that("variable labels survive redaction", {
   attr(data$email, "label") <- "Email address"
   expect_equal(attr(pii_redact(data)$email, "label"), "Email address")
 })
+
+test_that("obfuscated matches are redacted where the scan found them (D1)", {
+  filler <- paste("The road near house", 1:20, "is bad after the long rains this year")
+  data <- data.frame(note = c(
+    filler, "write ａｂｃ@example.org today please", "info&#64;example.org please",
+    "mail jo​hn@example.org now"
+  ))
+  clean <- pii_redact(data)
+  expect_equal(clean$note[1:20], filler)
+  expect_false(any(grepl("example", clean$note[21:23])))
+  expect_true(all(grepl("<EMAIL>", clean$note[21:23])))
+})
+
+test_that("pseudonyms replace letters of every script (D2)", {
+  out <- pseudonym(c("रमेश कुमार", "李小龙"), "k")
+  expect_false(any(grepl("[ऀ-ॿ一-鿿]", out)))
+  expect_match(out[1], "^[a-z]+ [a-z]+$")
+})
+
+test_that("pseudonyms rarely collide and do not depend on the session's RNG (D3, D4)", {
+  ids <- sprintf("%010d", seq_len(50000) * 7919L)
+  expect_gte(length(unique(pseudonym(ids, "k"))), 49990L)
+  default <- pseudonym(c("9876543210", "jane@example.org"), "k")
+  withr::with_preserve_seed({
+    RNGkind("L'Ecuyer-CMRG")
+    other <- pseudonym(c("9876543210", "jane@example.org"), "k")
+    RNGkind("default", "default", "default")
+  })
+  expect_equal(other, default)
+})
+
+test_that("redaction follows the configuration's min_confidence (D13)", {
+  path <- withr::local_tempfile(fileext = ".yml")
+  writeLines("min_confidence: low", path)
+  data <- data.frame(q = paste("answer number", 1:30, "says something else"))
+  findings <- pii_scan(data, config = pii_config(path))
+  expect_gt(nrow(attr(pii_redact(data, findings), "redactions")), 0L)
+})
+
+test_that("a card number in free text is a financial account, redacted whole (C1)", {
+  skip_if_not("intl_payment_card" %in% idcheck::id_schemes()$scheme)
+  filler <- paste("The road near house", 1:20, "is bad after the long rains this year")
+  data <- data.frame(note = c(filler, "card 4111 1111 1111 1111 thanks for the help"))
+  found <- pii_scan(data, config = pii_config("none.yml"))
+  expect_true("financial_account" %in% found$type)
+  expect_false("phone" %in% found$type)
+  expect_equal(pii_redact(data, found)$note[21], "card <FINANCIAL_ACCOUNT> thanks for the help")
+})

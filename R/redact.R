@@ -2,20 +2,40 @@
 # keeps the shape of a value (letters stay letters, digits stay digits) and
 # maps equal values to equal pseudonyms, so joins, counts and formats keep
 # working on the redacted data.
+#
+# Each character is drawn from SHA-256 of the key, the value and a block
+# number, not from R's random-number generator, so the same value and key
+# give the same pseudonym in every session, on every platform and under any
+# RNG setting. Letters of every script become Latin letters, digits of every
+# script ASCII digits, and combining marks go with the letter they belong to.
+# Different values of the same shape can still collide: for n values of a
+# shape with S possible spellings, about n^2 / 2S pairs do.
+hash_bytes <- function(key, value, n) {
+  blocks <- seq_len(ceiling(n / 32))
+  bytes <- unlist(lapply(blocks, function(block) {
+    hex <- tools::sha256sum(bytes = charToRaw(enc2utf8(paste(key, value, block, sep = "\x1f"))))
+    strtoi(substring(hex, seq(1L, 63L, 2L), seq(2L, 64L, 2L)), 16L)
+  }))
+  bytes[seq_len(n)]
+}
+
 pseudonym <- function(values, key) {
   distinct <- unique(values[!is.na(values)])
   replacement <- vapply(distinct, function(value) {
-    seed <- strtoi(substr(rlang::hash(paste0(key, value)), 1L, 7L), base = 16L)
-    withr::with_seed(seed, {
-      chars <- strsplit(value, "")[[1]]
-      upper <- grepl("[[:upper:]]", chars)
-      lower <- grepl("[[:lower:]]", chars)
-      digit <- grepl("[[:digit:]]", chars)
-      chars[upper] <- sample(LETTERS, sum(upper), replace = TRUE)
-      chars[lower] <- sample(letters, sum(lower), replace = TRUE)
-      chars[digit] <- as.character(sample(0:9, sum(digit), replace = TRUE))
-      paste(chars, collapse = "")
-    })
+    chars <- strsplit(value, "")[[1]]
+    if (length(chars) == 0L) {
+      return(value)
+    }
+    draw <- hash_bytes(key, value, length(chars))
+    upper <- stringi::stri_detect_regex(chars, "^\\p{Lu}$")
+    letter <- stringi::stri_detect_regex(chars, "^\\p{L}$") & !upper
+    digit <- stringi::stri_detect_regex(chars, "^\\p{Nd}$")
+    mark <- stringi::stri_detect_regex(chars, "^\\p{M}$")
+    chars[upper] <- LETTERS[draw[upper] %% 26L + 1L]
+    chars[letter] <- letters[draw[letter] %% 26L + 1L]
+    chars[digit] <- as.character(draw[digit] %% 10L)
+    chars[mark] <- ""
+    paste(chars, collapse = "")
   }, character(1))
   unname(replacement[match(values, distinct)])
 }
@@ -31,14 +51,21 @@ redactors <- function(key) {
 }
 
 # Types whose matches can be found and replaced inside longer text. Emails go
-# first so the digits of an address are not taken for a phone number.
-span_types <- c("email", "ip_address", "phone")
-span_patterns <- c(email = patterns$email, ip_address = patterns$ipv4, phone = patterns$phone)
+# first so the digits of an address are not taken for a phone number, and
+# card numbers before phones so a card is not cut into a phone and a rest.
+span_types <- c("email", "ip_address", "financial_account", "phone")
+span_patterns <- c(
+  email = patterns$email, ip_address = patterns$ipv4, financial_account = patterns$card,
+  phone = patterns$phone
+)
 structure_types <- c("free_text", "unique_text")
 
 # Within free text only the matched spans are replaced, every one of them; the
-# rest of the answer is kept.
-redact_spans <- function(values, types, redact) {
+# rest of the answer is kept. The scan matches normalized text (entities
+# decoded, widths folded, invisible characters dropped), so a cell is
+# normalized the same way before its spans are replaced; a cell with nothing
+# to replace is left exactly as it was.
+replace_spans <- function(values, types, redact) {
   for (type in intersect(span_types, types)) {
     values <- stringr::str_replace_all(values, span_patterns[[type]], function(hit) {
       real <- !is.na(matched(hit, type))
@@ -46,6 +73,14 @@ redact_spans <- function(values, types, redact) {
       hit
     })
   }
+  values
+}
+
+redact_spans <- function(values, types, redact) {
+  clean <- normalize_values(values)
+  replaced <- replace_spans(clean, types, redact)
+  touched <- !is.na(replaced) & replaced != clean
+  values[touched] <- replaced[touched]
   values
 }
 
@@ -83,7 +118,8 @@ redact_spans <- function(values, types, redact) {
 #' @param key A secret string that determines the pseudonyms; needed only for
 #'   `"pseudonym"`. Keep it out of the shared files; use the same key to redact
 #'   files that must still join.
-#' @param min_confidence The weakest findings to act on.
+#' @param min_confidence The weakest findings to act on; the configuration's
+#'   `min_confidence`, or `"medium"`, unless given.
 #' @return `data` with the flagged columns redacted, and the actions taken as
 #'   its `"redactions"` attribute: the column `name`, the `type` acted on, the
 #'   `method`, and `left`, the flagged types left in a column where only
@@ -99,12 +135,12 @@ redact_spans <- function(values, types, redact) {
 #' head(clean)
 #' attr(clean, "redactions")
 pii_redact <- function(data, findings = pii_scan(data), method = "placeholder",
-                       key = NULL, min_confidence = "medium") {
+                       key = NULL, min_confidence = NULL) {
   if (!is.data.frame(data)) {
     cli::cli_abort("{.arg data} must be a data frame, not {.obj_type_friendly {data}}.")
   }
   check_method(method, key)
-  min_confidence <- rlang::arg_match0(min_confidence, confidence_levels, "min_confidence")
+  min_confidence <- gate(min_confidence, attr(findings, "config", exact = TRUE))
   redact_frame(data, acted_on(findings, min_confidence), method, key)
 }
 
@@ -166,11 +202,19 @@ check_method <- function(method, key) {
   }
 }
 
+# The weakest confidence acted on: as given, or as the configuration says.
+gate <- function(min_confidence, config) {
+  if (is.null(min_confidence)) {
+    min_confidence <- if (is.null(config$min_confidence)) "medium" else config$min_confidence
+  }
+  rlang::arg_match0(min_confidence, confidence_levels, "min_confidence")
+}
+
 # The findings redaction acts on: strong enough, and not reviewed and allowed
 # in the configuration the scan used.
 acted_on <- function(findings, min_confidence, config = attr(findings, "config", exact = TRUE)) {
   config <- if (is.null(config)) pii_config() else config
   graded <- match(findings$confidence, confidence_levels) >=
     match(min_confidence, confidence_levels)
-  findings[graded & !allowed_by(findings, config$allow), ]
+  findings[graded & !allowed_by(findings, config$allow, config_root(config)), ]
 }
