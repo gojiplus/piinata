@@ -258,3 +258,9 @@ test_that("short national numbers count when written as phone numbers", {
   expect_true(is_phone_like("+356 2123 456"))
   expect_false(is_phone_like("472 0212 99"))
 })
+
+test_that("digits inside web addresses are not phone numbers", {
+  urls <- sprintf("//cdn.shopify.com/s/files/1/0077/2888/%04d/products/a.jpg", 1:30)
+  expect_false("phone" %in% pii_scan(data.frame(q1 = urls), config = pii_config("none.yml"))$type)
+  expect_true(!is.na(matched("call 98765 43210 or see https://x.org/1/2345/6789", "phone")))
+})

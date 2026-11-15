@@ -28,7 +28,10 @@ matched <- function(values, type) {
   switch(type,
     email = stringr::str_extract(values, patterns$email),
     phone = {
-      candidate <- stringr::str_extract(values, patterns$phone)
+      # Digits in a web address are paths and ids, not phone numbers:
+      # "//cdn.shopify.com/s/files/1/0077/2888/9892/...".
+      outside <- stringr::str_replace_all(values, "(?i)(?:https?:)?//\\S+|\\bwww\\.\\S+", " ")
+      candidate <- stringr::str_extract(outside, patterns$phone)
       ifelse(is_phone_like(candidate), candidate, NA_character_)
     },
     ip_address = {
