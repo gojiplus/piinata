@@ -9,7 +9,8 @@ Description: Scans survey exports, statistical data files, spreadsheets
     first read with an established reader and accounted for as read,
     unsupported or failed. Findings report where the data are and the
     evidence: what a field is called, what it contains, or how it behaves.
-    The package reports; it does not anonymize.
+    Flagged fields can be dropped, masked or replaced with placeholders or
+    pseudonyms, in data frames or in redacted copies of the files.
 License: MIT + file LICENSE
 URL: https://gojiplus.github.io/piinata/,
     https://github.com/gojiplus/piinata

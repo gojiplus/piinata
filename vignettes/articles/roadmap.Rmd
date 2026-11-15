@@ -26,8 +26,9 @@ Researchers call it from R. Projects also need it in the flow of work:
    joins and counts still work; and a custom function. The model is Presidio's
    split between an analyzer that returns typed spans with scores and an
    anonymizer that applies an operator per type (replace, mask, hash, redact,
-   encrypt, custom). `pii_scan()` is the analyzer; `pii_redact()` would be the
-   anonymizer and write a clean copy beside the original.
+   encrypt, custom). `pii_scan()` is the analyzer; `pii_redact()` is the
+   anonymizer, and `pii_redact_files()` writes a clean copy beside the
+   original. Still to do: JSON, and a custom function as a method.
 5. **Originals out of git.** With a clean copy written, the original can be
    added to `.gitignore` and the clean copy committed. This is opt-in and
    prints what it did; it does not rewrite history, so an original already
@@ -46,8 +47,8 @@ remove.
 | 0.0.0.9000 | reading layer, normalization, core detectors, `idcheck`, speed | done |
 | | `.piinata.yml` exceptions, custom patterns, ignore globs, review and accept | done |
 | | `pii_redact()` for data frames: drop, placeholder, mask, pseudonym | done |
+| | `pii_redact_files()`: a redacted copy beside each original (planned for 0.2.0) | done |
 | 0.1.0 | first CRAN release, after `idcheck` | |
-| 0.2.0 | redacting files in place of data frames; clean copy beside the original | |
 | 0.3.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports; file-name scanning | |
 | 0.4.0 | pre-commit hook and GitHub Action | |
 | 0.5.0 | optional backends: Presidio, `nametagger`; comparison vignette | |

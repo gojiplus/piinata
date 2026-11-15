@@ -7,8 +7,8 @@
 pii_redact(
   data,
   findings = pii_scan(data),
-  method = "pseudonym",
-  key = "piinata",
+  method = "placeholder",
+  key = NULL,
   min_confidence = "medium"
 )
 }
@@ -20,14 +20,17 @@ pii_redact(
 \item{method}{One method for every flagged column, or a named vector giving
 the method per finding type, with an optional \code{default}.}
 
-\item{key}{A string that determines the pseudonyms. Keep it out of the
-shared files; use the same key to redact files that must still join.}
+\item{key}{A secret string that determines the pseudonyms; needed only for
+\code{"pseudonym"}. Keep it out of the shared files; use the same key to redact
+files that must still join.}
 
 \item{min_confidence}{The weakest findings to act on.}
 }
 \value{
 \code{data} with the flagged columns redacted, and the actions taken as
-its \code{"redactions"} attribute.
+its \code{"redactions"} attribute: the column \code{name}, the \code{type} acted on, the
+\code{method}, and \code{left}, the flagged types left in a column where only
+matches were replaced.
 }
 \description{
 Returns a copy of \code{data} with flagged columns removed or their values
@@ -36,7 +39,8 @@ replaced. Four methods, in increasing order of what survives:
 \details{
 \itemize{
 \item \code{"drop"} removes the column.
-\item \code{"placeholder"} replaces each value with its type, such as \verb{<EMAIL>}.
+\item \code{"placeholder"}, the default, replaces each value with its type, such as
+\verb{<EMAIL>}.
 \item \code{"mask"} keeps the first two characters and hides the rest.
 \item \code{"pseudonym"} replaces each value with a made-up one of the same shape,
 the same every time for the same value and \code{key}, so joins across files,
@@ -44,13 +48,18 @@ counts of distinct people and format checks still work.
 }
 
 In free text, and in any column where only some values match, only the
-matched email addresses, phone numbers and IP addresses are replaced; with
-\code{"drop"} the whole column goes.
+matched email addresses, phone numbers and IP addresses are replaced, every
+one of them; with \code{"drop"} the whole column goes. Anything else flagged in
+such a column, such as a name inside an answer, is left in place.
+
+Fields allowed in the project's configuration (see \code{\link[=pii_config]{pii_config()}}) are left
+alone, as \code{\link[=pii_check]{pii_check()}} leaves them alone.
 
 Pseudonyms are for keeping analyses running, not for security. They are not
-encryption, the same \code{key} always gives the same result, and a column of
-pseudonyms can still identify people through what surrounds it. Names
-buried in free text are not found without a language model.
+encryption, and a column of pseudonyms can still identify people through
+what surrounds it. Anyone who knows the \code{key} can test whether a guessed
+value, such as a phone number, gives a pseudonym in the file, so the key
+has no default and must not be shared with the data.
 }
 \examples{
 survey <- data.frame(

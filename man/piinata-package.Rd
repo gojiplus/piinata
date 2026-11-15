@@ -6,7 +6,7 @@
 \alias{piinata-package}
 \title{piinata: Find Personal Data in Research Files}
 \description{
-Scans survey exports, statistical data files, spreadsheets and text documents for likely personal data such as names, phone numbers, email addresses, dates of birth and locations. Every file is first read with an established reader and accounted for as read, unsupported or failed. Findings report where the data are and the evidence: what a field is called, what it contains, or how it behaves. The package reports; it does not anonymize.
+Scans survey exports, statistical data files, spreadsheets and text documents for likely personal data such as names, phone numbers, email addresses, dates of birth and locations. Every file is first read with an established reader and accounted for as read, unsupported or failed. Findings report where the data are and the evidence: what a field is called, what it contains, or how it behaves. Flagged fields can be dropped, masked or replaced with placeholders or pseudonyms, in data frames or in redacted copies of the files.
 }
 \seealso{
 Useful links:

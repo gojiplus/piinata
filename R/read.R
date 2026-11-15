@@ -1,11 +1,19 @@
-read_one <- function(path, registry) {
-  # readr reads compressed delimited files directly, so "survey.csv.gz" is a csv.
-  packed <- tolower(fs::path_ext(path)) %in% c("gz", "bz2", "xz", "zip")
+compression_extensions <- c("gz", "bz2", "xz", "zip")
+delimited_extensions <- c("csv", "tsv", "tab", "psv")
+
+# readr reads and writes compressed delimited files directly, so
+# "survey.csv.gz" is a csv. Other compressed files are of type "compressed".
+file_type <- function(path) {
+  packed <- tolower(fs::path_ext(path)) %in% compression_extensions
   extension <- tolower(fs::path_ext(if (packed) fs::path_ext_remove(path) else path))
-  if (packed && !extension %in% c("csv", "tsv", "tab", "psv")) {
+  if (packed && !extension %in% delimited_extensions) {
     extension <- "compressed"
   }
-  reader <- registry[[extension]]
+  extension
+}
+
+read_one <- function(path, registry) {
+  reader <- registry[[file_type(path)]]
   if (is.null(reader)) {
     detail <- "no reader for this file type"
     return(list(fields = new_fields(), status = "unsupported", detail = detail))

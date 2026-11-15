@@ -11,8 +11,8 @@ documents, and reports which fields look personal and why. It looks at what a
 field is called, what it contains, and how it behaves, so an email address in a
 column named `q12` is found as readily as one in a column named `email`.
 
-It reports, and it can redact what it finds. An empty report does not show that
-data are safe to share.
+It reports, and it can redact what it finds, in a data frame or in a copy of
+each file. An empty report does not show that data are safe to share.
 
 The name: hit a file and see what personal data falls out.
 
@@ -86,9 +86,32 @@ clean <- pii_redact(survey, method = c(email = "pseudonym", default = "drop"), k
 ```
 
 Flagged columns can be dropped, replaced with a placeholder such as
-`<EMAIL>`, masked, or replaced with pseudonyms that keep each value's shape
-and repeat for equal values, so joins and counts still work. Pseudonyms keep
-analyses running; they are not encryption.
+`<EMAIL>` (the default), masked, or replaced with pseudonyms that keep each
+value's shape and repeat for equal values, so joins and counts still work.
+Pseudonyms keep analyses running; they are not encryption. They need a key
+you keep to yourself, because anyone with the key can test a guessed phone
+number against them. Fields allowed in `.piinata.yml` are left alone.
+
+For files, `pii_redact_files()` writes a redacted copy beside each flagged
+one, `survey.dta` to `survey_redacted.dta`, and reports on every file:
+
+``` r
+pii_redact_files("path/to/project", key = "a secret")
+#> # A tibble: 4 × 4
+#>   source                 status      destination           detail
+#>   <chr>                  <chr>       <chr>                 <chr>
+#> 1 project/crops.csv      clean       <NA>                  nothing to redact
+#> 2 project/fieldwork.log  redacted    project/fieldwork_re… replaced: email, phone
+#> 3 project/survey.dta     redacted    project/survey_redac… redacted: resp_name, q12, ...
+#> 4 project/survey.sas7bdat unsupported <NA>                 haven cannot write SAS data …
+```
+
+Untouched columns are written as they were read, and Stata and SPSS labels
+are kept. Delimited text, Excel, Stata, SPSS, SAS transport, R data, Parquet
+and plain-text files can be written back; SAS data files, JSON and documents
+are reported as unsupported. The originals are not changed: until they are
+removed or kept out of version control, the personal data are still in the
+project.
 
 ## What it reads
 

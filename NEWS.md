@@ -17,6 +17,13 @@
 * `pii_review()` and `pii_accept()` write findings for a person to decide on
   and record the decisions.
 * `pii_redact()` drops, masks, replaces or pseudonymizes flagged columns.
+  Placeholders are the default; pseudonyms need a `key`, which has no default.
+  Every match in a cell is replaced, not only the first, and fields allowed in
+  `.piinata.yml` are left alone.
+* `pii_redact_files()` writes a redacted copy beside each flagged file
+  (delimited text, Excel, Stata, SPSS, SAS transport, R data, Parquet and
+  plain text) and reports on every file, including the ones it cannot write
+  back and the fields left below the confidence threshold.
 * The package is named piinata; it was briefly piiscan. The configuration file
   is `.piinata.yml`.
 * Phone-like numbers are graded by how they are written and how much of a

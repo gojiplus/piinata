@@ -57,8 +57,9 @@ A scan is four stages, each in its own files, each replaceable:
 
 Two more stages act on findings: decide (`R/config.R`, `R/review.R`), where a
 person allows or removes each flagged field and the decision is recorded in
-`.piinata.yml`, and redact (`R/redact.R`), which drops, masks or pseudonymizes
-what was flagged.
+`.piinata.yml`, and redact (`R/redact.R`, `R/redact-files.R`), which drops,
+masks or pseudonymizes what was flagged, in a data frame or in a copy of each
+file written beside the original.
 
 Normalization exists because real exports are dirty. It applies Unicode
 compatibility normalization, turns decimal digits of any script into ASCII
@@ -211,7 +212,6 @@ stress test, not an estimate for typical data.
 
 ## Out of scope
 
-- Removing, masking or recoding personal data, until `pii_redact()`.
 - Indirect identification from combinations of traits. `sdcMicro` does this.
 - Secrets such as API keys. `gitleaks` does this.
 - Images, audio, scanned documents.

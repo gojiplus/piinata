@@ -18,6 +18,7 @@ reference:
     desc: Remove or replace what was flagged.
     contents:
       - pii_redact
+      - pii_redact_files
   - title: Read
     desc: Turn files and objects into fields, and account for every file.
     contents:
