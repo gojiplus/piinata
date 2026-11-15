@@ -252,3 +252,9 @@ test_that("birth dates from values alone are weak until the name agrees", {
   expect_equal(grade(data.frame(q4 = dates)), "low")
   expect_equal(grade(data.frame(birth_date = dates)), "medium")
 })
+
+test_that("short national numbers count when written as phone numbers", {
+  expect_true(is_phone_like("04) 472 0212"))
+  expect_true(is_phone_like("+356 2123 456"))
+  expect_false(is_phone_like("472 0212 99"))
+})

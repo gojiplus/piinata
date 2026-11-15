@@ -31,6 +31,11 @@ test_that("columns of places withdraw the rules' person-name finding", {
   expect_equal(vote_entities(heuristic(), labels, rep(1, 4), 0.5), list())
 })
 
+test_that("numbers and gender words do not vote", {
+  expect_equal(not_names(c("1", "Asha Devi"), c(1, 1)), c(TRUE, FALSE))
+  expect_true(all(not_names(c("Male", "Female", "male"), c(5, 4, 1))))
+})
+
 test_that("votes are weighted by rows", {
   labels <- stats::setNames(c("person", NA), c("a", "b"))
   expect_length(vote_entities(list(), labels, c(1, 9), 0.5), 0L)

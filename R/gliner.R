@@ -14,7 +14,7 @@ gliner_labels <- c("person", "location", "organization")
 #' is judged by the share of rows so tagged:
 #'
 #' * when at least `share` of rows name people, a `person_name` finding is added,
-#'   of `medium` confidence when at least 80% of rows do and `low` otherwise;
+#'   of `medium` confidence when at least 70% of rows do and `low` otherwise;
 #' * when at least `share` of rows name places or organizations, the
 #'   low-confidence `person_name` finding of the rules is withdrawn, since
 #'   place and office names look like person names to them.
@@ -86,10 +86,11 @@ vote_entities <- function(found, labels, weight, share) {
   named <- vapply(found, function(f) f$type == "person_name" && f$evidence == "value", logical(1))
   if (shares[["person"]] >= share) {
     n <- round(shares[["person"]] * sum(weight))
-    # Like phone numbers, a column is judged by how much of it the model fills:
-    # real name columns score above 0.9, crop varieties such as "Raj Vijay"
-    # about 0.6.
-    confidence <- if (shares[["person"]] >= 0.8) "medium" else "low"
+    # Like phone numbers, a column is judged by how much of it the model fills.
+    # On SOTAB's validation split (real web tables), a cut of 0.7 kept 42 of
+    # 47 columns of names and 9 of 952 others; crop varieties such as
+    # "Raj Vijay" in the synthetic benchmark score about 0.57.
+    confidence <- if (shares[["person"]] >= 0.7) "medium" else "low"
     vote <- finding(
       "person_name", "value", "gliner", n, shares[["person"]],
       names(labels)[labels %in% "person"], confidence
@@ -102,10 +103,19 @@ vote_entities <- function(found, labels, weight, share) {
   found
 }
 
+# Values with no letter, and columns of gender words, which the model takes
+# for names.
+not_names <- function(values, weight) {
+  letterless <- !grepl("\\p{L}", values, perl = TRUE)
+  gendered <- sum(weight[tolower(trimws(values)) %in% gender_words()]) / sum(weight) >= 0.8
+  if (gendered) rep(TRUE, length(values)) else letterless
+}
+
 uncertain <- function(field, found, values) {
   strong <- vapply(found, function(f) f$confidence %in% c("medium", "high"), logical(1))
   free <- vapply(found, function(f) f$type == "free_text", logical(1))
-  field$kind == "tabular" && field$type == "character" && length(values) >= 5L &&
+  # One name on every row, such as a single author, is still a person's name.
+  field$kind == "tabular" && field$type == "character" && length(values) >= 1L &&
     !any(strong) && !any(free) && stats::median(nchar(values)) <= 60
 }
 
@@ -117,9 +127,17 @@ gliner_review <- function(field, found, values, weight) {
   keep <- unique(round(seq(1, length(values), length.out = min(settings$values, length(values)))))
   values <- values[keep]
   weight <- weight[keep]
-  predictions <- gliner_state$model$inference(
-    as.list(values), as.list(gliner_labels), threshold = settings$threshold
-  )
-  labels <- stats::setNames(covering_label(values, predictions), values)
+  skipped <- not_names(values, weight)
+  labels <- stats::setNames(rep(NA_character_, length(values)), values)
+  if (any(!skipped)) {
+    predictions <- gliner_state$model$inference(
+      as.list(values[!skipped]), as.list(gliner_labels), threshold = settings$threshold
+    )
+    labels[!skipped] <- covering_label(values[!skipped], predictions)
+  }
+  # Kept for the benchmark scripts, which study the votes of every column.
+  gliner_state$last_vote <- vapply(gliner_labels, function(label) {
+    sum(weight[labels %in% label]) / sum(weight)
+  }, numeric(1))
   vote_entities(found, labels, weight, settings$share)
 }

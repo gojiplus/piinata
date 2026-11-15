@@ -14,7 +14,12 @@ is_phone_like <- function(candidate) {
   # "1699-1707 (56" is a span of years and a page count.
   year <- "(?:1[0-9]|20)\\d{2}"
   years <- stringr::str_detect(candidate, paste0("^", year, "\\s?[-/]\\s?", year, "(?!\\d)"))
-  digits >= 10L & digits <= 13L & !dated & !dotted & !years
+  # Many national numbers have eight or nine digits ("(04) 472 0212" in New
+  # Zealand); written with the area code in brackets, or after a plus, they
+  # are phone numbers by their form.
+  marked <- stringr::str_detect(candidate, "^\\+|^\\d{1,4}\\)|\\(\\d{1,4}\\)")
+  long_enough <- (digits >= 10L & digits <= 13L) | (digits >= 8L & digits <= 9L & marked)
+  long_enough & !dated & !dotted & !years
 }
 
 # Each detector sees the distinct values of a field and how often each occurs,

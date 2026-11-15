@@ -56,6 +56,16 @@ context_terms <- function() {
   )
 }
 
+# Answers to a question about sex or gender. GLiNER tags "Male" and "Female"
+# as people, so a column made of these is not sent to it.
+gender_words <- function() {
+  c(
+    "male", "female", "m", "f", "man", "woman", "men", "women", "boy", "girl", "other",
+    "non-binary", "nonbinary", "unknown", "hombre", "mujer", "homme", "femme", "purush", "mahila",
+    "\u092a\u0941\u0930\u0941\u0937", "\u092e\u0939\u093f\u0932\u093e"
+  )
+}
+
 # Fields survey platforms add to every export, matched on the whole name.
 platform_terms <- function() {
   c(

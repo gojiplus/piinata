@@ -37,7 +37,7 @@ is judged by the share of rows so tagged:
 \details{
 \itemize{
 \item when at least \code{share} of rows name people, a \code{person_name} finding is added,
-of \code{medium} confidence when at least 80\% of rows do and \code{low} otherwise;
+of \code{medium} confidence when at least 70\% of rows do and \code{low} otherwise;
 \item when at least \code{share} of rows name places or organizations, the
 low-confidence \code{person_name} finding of the rules is withdrawn, since
 place and office names look like person names to them.

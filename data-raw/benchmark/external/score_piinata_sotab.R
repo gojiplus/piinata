@@ -7,6 +7,7 @@ if (length(args) >= 3L && args[[3]] == "gliner") use_gliner()
 config <- pii_config("none.yml")
 columns <- lapply(readLines(args[[1]]), jsonlite::fromJSON)
 rows <- lapply(columns, function(column) {
+  gliner_state$last_vote <- NULL
   findings <- if (length(column$values) == 0L) {
     empty_findings()
   } else {
@@ -18,7 +19,13 @@ rows <- lapply(columns, function(column) {
   data.frame(
     table = column$table, column = column$column, label = column$label,
     personal = column$personal, strong = level("medium"), any = level("low"),
-    types = paste(unique(findings$type), collapse = " ")
+    types = paste(unique(findings$type), collapse = " "),
+    person_vote = if (is.null(gliner_state$last_vote)) NA else gliner_state$last_vote[["person"]],
+    place_vote = if (is.null(gliner_state$last_vote)) {
+      NA
+    } else {
+      gliner_state$last_vote[["location"]] + gliner_state$last_vote[["organization"]]
+    }
   )
 })
 utils::write.csv(do.call(rbind, rows), args[[2]], row.names = FALSE)
