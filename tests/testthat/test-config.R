@@ -105,3 +105,66 @@ test_that("allowing without a reason is refused", {
   readr::write_csv(decisions, review)
   expect_error(pii_accept(review, file.path(dir, ".piinata.yml")), "needs a")
 })
+
+config_with <- function(lines) {
+  path <- withr::local_tempfile(fileext = ".yml", .local_envir = parent.frame())
+  writeLines(lines, path)
+  pii_config(path)
+}
+
+test_that("a word list finds its words, whole and in any case", {
+  config <- config_with(c(
+    "patterns:", "  - name: interviewer", "    type: person_name",
+    "    words: [Kamla Meena, Ravi Bairwa]"
+  ))
+  notes <- data.frame(note = c(
+    paste("Visit", 1:30, "went well and the road was dry after the rains"),
+    "Interview done by kamla meena at noon", "Ravi Bairwanath came along"
+  ))
+  found <- pii_scan(notes, config = config)
+  hit <- found[found$detector == "custom:interviewer", ]
+  expect_equal(hit$n, 1L)
+})
+
+test_that("excluded values do not count and validation must pass", {
+  config <- config_with(c(
+    "patterns:", "  - name: member_card", "    regex: '^[0-9]{16}$'",
+    "    validate: luhn", "    exclude: '^0'", "    confidence: low"
+  ))
+  withr::local_seed(4)
+  valid <- c("4111111111111111", "5555555555554444", "0000000000000000")
+  numbers <- data.frame(q9 = rep(valid, 10))
+  found <- pii_scan(numbers, config = config)
+  hit <- found[found$detector == "custom:member_card", ]
+  expect_equal(hit$n, 20L)
+})
+
+test_that("an unknown check is an error", {
+  expect_error(
+    config_with(c("patterns:", "  - name: x", "    regex: x", "    validate: crc32")),
+    "must be one of"
+  )
+})
+
+test_that("a column's name lifts what its values show", {
+  skip_if_not("us_ssn" %in% idcheck::id_schemes()$scheme)
+  withr::local_seed(5)
+  ssn <- sprintf("%03d-%02d-%04d", sample(1:665, 60), sample(1:99, 60, TRUE), sample(1:9999, 60))
+  grade <- function(data) {
+    found <- pii_scan(data, config = pii_config("none.yml"))
+    found$confidence[found$type == "us_ssn"]
+  }
+  expect_equal(grade(data.frame(q24 = ssn)), "low")
+  expect_equal(grade(data.frame(ssn_number = ssn)), "medium")
+})
+
+test_that("context words of custom patterns lift their findings", {
+  config <- config_with(c(
+    "patterns:", "  - name: study_id", "    regex: '^RJ-[0-9]{6}$'",
+    "    confidence: low", "    context: [respondent]"
+  ))
+  ids <- sprintf("RJ-%06d", 1:30)
+  grade <- function(data) pii_scan(data, config = config)$confidence
+  expect_equal(grade(data.frame(q1 = ids)), "low")
+  expect_equal(grade(data.frame(respondent_code = ids)), "medium")
+})

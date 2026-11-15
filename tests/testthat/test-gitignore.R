@@ -1,17 +1,3 @@
-repository <- function() {
-  skip_if(!nzchar(Sys.which("git")), "git is not installed")
-  dir <- withr::local_tempdir(.local_envir = parent.frame())
-  system2("git", c("init", "-q", shQuote(dir)))
-  fs::dir_create(file.path(dir, "data"))
-  readr::write_csv(people(), file.path(dir, "data", "survey.csv"), na = "")
-  readr::write_csv(people(), file.path(dir, "data", "wave [2].csv"), na = "")
-  dir
-}
-
-git_in <- function(dir, ...) {
-  suppressWarnings(system2("git", c("-C", shQuote(dir), ...), stdout = TRUE, stderr = FALSE))
-}
-
 test_that("originals are ignored and their redacted copies are not", {
   dir <- repository()
   report <- suppressMessages(pii_redact_files(file.path(dir, "data")))

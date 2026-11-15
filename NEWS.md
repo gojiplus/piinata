@@ -46,6 +46,14 @@
   Julia, MATLAB and the shell, contact cards, mail, calendars and
   transcripts. Shapefile side files are reported as ignored; legacy `.doc`
   files as unsupported, with what to do.
+* Value findings move up a grade when the column's name or label names
+  their kind, after Presidio's context words. Custom patterns in
+  `.piinata.yml` may match a list of `words`, `exclude` values, `validate`
+  against an idcheck scheme or check-digit algorithm, and carry `context`
+  words. In sentences, custom patterns count single matches, as built-in
+  ones do.
+* IBANs, MAC addresses and UUIDs are checked with 'checkstring'; US Social
+  Security, UK NHS and payment card numbers with 'idcheck', when installed.
 * `pii_ignore_originals()` adds the originals of redacted files to
   `.gitignore`, one rule per file, checks each rule with `git check-ignore`,
   and reports originals already tracked and copies an existing rule hides.

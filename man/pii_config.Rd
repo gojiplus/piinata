@@ -32,6 +32,14 @@ patterns:
   - name: study_id
     regex: "^RJ-[0-9]\{6\}$"
     confidence: high
+  - name: interviewer
+    type: person_name
+    words: [Kamla Meena, Ravi Bairwa]
+  - name: member_card
+    regex: "[0-9]\{16\}"
+    validate: luhn
+    context: [member, card]
+    confidence: low
 terms:
   person_name: [mukhiya]
 regions: [IN]
@@ -40,12 +48,17 @@ sample: 10000
 }\if{html}{\out{</div>}}
 
 An \code{allow} entry names a \code{field}, a \code{type} of finding, a \code{source} glob, or
-any combination, and must give a \code{reason}. Custom \code{patterns} are regular
-expressions tried on values; \code{terms} add words to the vocabulary used on
-field names and labels. \code{regions} names the countries whose numbering plans
-judge phone numbers written without a country code, as two-letter codes
-(see \code{dialtone::phone_regions()}); it is used when the 'dialtone' package
-is installed.
+any combination, and must give a \code{reason}. Custom \code{patterns} match values
+by a regular expression (\code{regex}) or a list of \code{words} found as whole
+words, and may set an \code{exclude} expression for values that never count,
+a \code{validate} check they must pass (an idcheck scheme, or \code{luhn},
+\code{verhoeff}, \code{damm}, \code{mod11_2}, \code{mod97_10}), and \code{context} words: when a
+column's name or label holds one, its finding moves up a grade, as
+built-in findings do when the name agrees with the values. \code{terms} add
+words to the vocabulary used on field names and labels. \code{regions} names the
+countries whose numbering plans judge phone numbers written without a
+country code, as two-letter codes (see \code{dialtone::phone_regions()}); it is
+used when the 'dialtone' package is installed.
 }
 \examples{
 file <- tempfile(fileext = ".yml")

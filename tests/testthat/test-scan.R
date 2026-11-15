@@ -222,3 +222,15 @@ test_that("a column of addresses is found behind a question number", {
   expect_true("address" %in% findings$type)
   expect_equal(findings$confidence[findings$type == "address"], "medium")
 })
+
+test_that("IBANs, MAC addresses and UUIDs are checked by checkstring", {
+  skip_if_not_installed("checkstring")
+  config <- pii_config("none.yml")
+  types <- function(values) pii_scan(data.frame(q9 = values), config = config)$type
+  ibans <- rep(c("GB82 WEST 1234 5698 7654 32", "DE89370400440532013000"), 15)
+  expect_true("iban" %in% types(ibans))
+  wrong <- rep(c("GB83 WEST 1234 5698 7654 32", "DE88370400440532013000"), 15)
+  expect_false("iban" %in% types(wrong))
+  macs <- sprintf("00:1A:2B:3C:4D:%02X", 1:30)
+  expect_true("device_id" %in% types(macs))
+})

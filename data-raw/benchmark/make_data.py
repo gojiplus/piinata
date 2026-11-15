@@ -86,6 +86,30 @@ d["q23"] = col("q23", [us_address() for _ in range(n)], True, "Q23")
 d["q37"] = col("q37", [f"{c}, {s}" for c, s, _ in (random.choice(cities) for _ in range(n))], False, "Q37")
 d["q38"] = col("q38", [f"{random.choice(['First National', 'Acme', 'Golden State', 'Lakeside', 'Riverside'])} {random.choice(['Bank', 'Hardware', 'Dental Group', 'Medical Center', 'Credit Union'])}" for _ in range(n)], False, "Q38")
 d["q39"] = col("q39", [random.choice(streets) for _ in range(n)], False, "Q39")
+# Identity numbers with checks: US Social Security numbers, payment cards and
+# IBANs, behind question numbers; and a decoy of nine-digit order numbers,
+# which an SSN's format alone cannot tell apart.
+def ssn():
+    area = random.choice([a for a in range(1, 900) if a != 666])
+    return f"{area:03d}-{random.randint(1, 99):02d}-{random.randint(1, 9999):04d}"
+def luhn_complete(body):
+    digits = [int(c) for c in body][::-1]
+    total = sum(d if i % 2 else (d * 2 - 9 if d * 2 > 9 else d * 2) for i, d in enumerate(digits))
+    return body + str((10 - total % 10) % 10)
+def card():
+    prefix = random.choice(["4", "51", "55", "37", "6011", "60"])
+    length = 15 if prefix == "37" else 16
+    body = prefix + "".join(random.choice("0123456789") for _ in range(length - len(prefix) - 1))
+    return luhn_complete(body)
+def iban():
+    account = "".join(random.choice("0123456789") for _ in range(18))
+    moved = account + "DE00"
+    number = int("".join(str(int(c, 36)) for c in moved))
+    return f"DE{98 - number % 97:02d}{account}"
+d["q24"] = col("q24", [ssn() for _ in range(n)], True, "Q24")
+d["q25"] = col("q25", [card() for _ in range(n)], True, "Q25")
+d["q26"] = col("q26", [iban() for _ in range(n)], True, "Q26")
+d["q40"] = col("q40", [str(random.randint(10**8, 10**9 - 1)) for _ in range(n)], False, "Q40")
 (out / "truth.json").write_text(json.dumps(truth, indent=1))
 d.to_csv(out / "std" / "survey.csv", index=False)
 d.to_stata(out / "std" / "survey.dta", write_index=False, variable_labels={k: v["label"] for k, v in truth.items()}, version=119)

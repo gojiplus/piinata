@@ -23,18 +23,42 @@ check_allow <- function(rule, path) {
 }
 
 check_pattern <- function(pattern, path) {
-  if (is.null(pattern$name) || is.null(pattern$regex)) {
-    cli::cli_abort("Each {.field patterns} entry in {.file {path}} needs a name and a regex.")
-  }
-  valid <- tryCatch(is.logical(stringr::str_detect("", pattern$regex)), error = function(e) FALSE)
-  if (!valid) {
+  if (is.null(pattern$name) || (is.null(pattern$regex) && is.null(pattern$words))) {
     cli::cli_abort(
-      "Pattern {.val {pattern$name}} in {.file {path}} is not a valid regular expression."
+      "Each {.field patterns} entry in {.file {path}} needs a name and a regex or words."
     )
+  }
+  for (part in intersect(c("regex", "exclude"), names(pattern))) {
+    valid <- tryCatch(
+      is.logical(stringr::str_detect("", pattern[[part]])),
+      error = function(e) FALSE
+    )
+    if (!valid) {
+      cli::cli_abort(c(
+        "Pattern {.val {pattern$name}} in {.file {path}} is not a valid regular expression.",
+        "i" = "Check its {.field {part}}."
+      ))
+    }
+  }
+  checks <- c(
+    "luhn", "verhoeff", "damm", "mod11_2", "mod97_10",
+    if (rlang::is_installed("idcheck")) idcheck::id_schemes()$scheme
+  )
+  if (!is.null(pattern$validate)) {
+    rlang::check_installed("idcheck", "to validate patterns")
+    if (!pattern$validate %in% checks) {
+      cli::cli_abort(c(
+        "Pattern {.val {pattern$name}} in {.file {path}} has an unknown {.field validate}.",
+        "i" = "It must be one of {.or {.val {checks}}}."
+      ))
+    }
   }
   confidence <- if (is.null(pattern$confidence)) "medium" else pattern$confidence
   list(
-    name = pattern$name, regex = pattern$regex,
+    name = pattern$name, regex = pattern$regex, exclude = pattern$exclude,
+    words = as.character(unlist(pattern$words)),
+    context = tolower(as.character(unlist(pattern$context))),
+    validate = pattern$validate,
     type = if (is.null(pattern$type)) pattern$name else pattern$type,
     confidence = rlang::arg_match0(confidence, confidence_levels, "confidence")
   )
@@ -60,6 +84,14 @@ check_pattern <- function(pattern, path) {
 #'   - name: study_id
 #'     regex: "^RJ-[0-9]{6}$"
 #'     confidence: high
+#'   - name: interviewer
+#'     type: person_name
+#'     words: [Kamla Meena, Ravi Bairwa]
+#'   - name: member_card
+#'     regex: "[0-9]{16}"
+#'     validate: luhn
+#'     context: [member, card]
+#'     confidence: low
 #' terms:
 #'   person_name: [mukhiya]
 #' regions: [IN]
@@ -68,12 +100,17 @@ check_pattern <- function(pattern, path) {
 #' ```
 #'
 #' An `allow` entry names a `field`, a `type` of finding, a `source` glob, or
-#' any combination, and must give a `reason`. Custom `patterns` are regular
-#' expressions tried on values; `terms` add words to the vocabulary used on
-#' field names and labels. `regions` names the countries whose numbering plans
-#' judge phone numbers written without a country code, as two-letter codes
-#' (see `dialtone::phone_regions()`); it is used when the 'dialtone' package
-#' is installed.
+#' any combination, and must give a `reason`. Custom `patterns` match values
+#' by a regular expression (`regex`) or a list of `words` found as whole
+#' words, and may set an `exclude` expression for values that never count,
+#' a `validate` check they must pass (an idcheck scheme, or `luhn`,
+#' `verhoeff`, `damm`, `mod11_2`, `mod97_10`), and `context` words: when a
+#' column's name or label holds one, its finding moves up a grade, as
+#' built-in findings do when the name agrees with the values. `terms` add
+#' words to the vocabulary used on field names and labels. `regions` names the
+#' countries whose numbering plans judge phone numbers written without a
+#' country code, as two-letter codes (see `dialtone::phone_regions()`); it is
+#' used when the 'dialtone' package is installed.
 #'
 #' @param path The configuration file. A missing file gives an empty
 #'   configuration.

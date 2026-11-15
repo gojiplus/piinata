@@ -1,22 +1,3 @@
-project <- function() {
-  dir <- withr::local_tempdir(.local_envir = parent.frame())
-  readr::write_csv(people(), file.path(dir, "survey.csv"), na = "")
-  data <- people()
-  attr(data$email, "label") <- "Email address"
-  data$village <- haven::labelled(match(data$village, c("Palpur", "Netrad")),
-    c(Palpur = 1, Netrad = 2),
-    label = "Village"
-  )
-  haven::write_dta(data, file.path(dir, "survey.dta"))
-  writeLines(
-    c("Started.", "Called 98765 43210 and 91234 56789; wrote to a@example.org.", "Done."),
-    file.path(dir, "fieldwork.log")
-  )
-  writeLines("{\"email\": \"a@example.org\"}", file.path(dir, "contacts.json"))
-  readr::write_csv(data.frame(season = rep(c("rabi", "kharif"), 20)), file.path(dir, "crops.csv"))
-  dir
-}
-
 status_of <- function(report, file) report$status[basename(report$source) == file]
 
 test_that("each flagged file gets a redacted copy and every file is accounted for", {

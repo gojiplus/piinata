@@ -37,6 +37,25 @@ name_terms <- function() {
   )
 }
 
+# Words that, in a column's name or label, corroborate what its values show:
+# the vocabulary above for each kind of finding, and for identity numbers the
+# context words of Microsoft Presidio's recognizers. Presidio adds 0.35 to a
+# match when such a word comes shortly before it; for a column, the name and
+# label are that context.
+context_terms <- function() {
+  c(
+    name_terms(),
+    list(
+      in_aadhaar = c("aadhaar", "aadhar", "uid", "uidai"), in_pan = "pan",
+      in_gstin = c("gst", "gstin"), in_epic = c("epic", "voter"), in_passport = "passport",
+      in_mobile = c("mobile", "phone", "cell", "whatsapp"),
+      us_ssn = c("ssn", "ssns", "social", "security"), gb_nhs = "nhs",
+      iban = c("iban", "bank", "account"),
+      intl_payment_card = c("card", "credit", "debit", "visa", "mastercard", "amex", "cc")
+    )
+  )
+}
+
 # Fields survey platforms add to every export, matched on the whole name.
 platform_terms <- function() {
   c(

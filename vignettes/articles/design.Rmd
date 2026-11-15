@@ -144,6 +144,9 @@ A detector is a function from a field to zero or more findings. The core set:
 | value | date of birth: parseable dates in a plausible birth range | `lubridate` |
 | value | coordinates: numeric latitude/longitude pairs in range | base R |
 | value | addresses: two of a postcode, a house marker and an area word (street, avenue, ward, tehsil ...); postcodes for the project's `regions` | Google's address metadata, stored with the package |
+| value | identity numbers: Aadhaar, PAN, GSTIN, voter id, passport, US SSN, UK NHS, payment cards | `idcheck` |
+| value | IBANs, MAC addresses, UUIDs | `checkstring` |
+| context | a value finding moves up a grade when the column's name or label names its kind, as Presidio raises a match with a context word nearby | `context_terms()` |
 | value | phone numbers: 10 to 13 digits, graded by how they are written and how much of a column they fill; checked against libphonenumber's numbering plans for the project's `regions` | `dialtone`, when installed |
 | structure | identifier-like: nearly all values distinct | base R |
 | structure | free text: long, varied strings; value detectors then run cell by cell | base R |
@@ -204,18 +207,19 @@ A scan must be cheap enough to run on every commit.
 ## How we know it works
 
 1. **Benchmark, tabular.** The benchmark in `data-raw/benchmark/` of the
-   repository holds 17 personal columns and 25 others, with Indian and US
+   repository holds 20 personal columns and 26 others, with Indian and US
    names and addresses, names in lower case and Devanagari behind question
-   numbers, and decoys: village, facility, scheme, caste, crop, city, business
-   and street names. `score_piinata.R` scores a scan at the `medium` level
-   that `pii_check()` gates on and at `low`. The core now catches 13 of 17 at
-   `medium` with no false alarms, and 15 of 17 at `low` with one (village
-   names read as person names). What it misses are names behind question
-   numbers, the job of a named-entity backend: with `use_gliner()` it catches
-   16 of 17 at `medium` with no false alarms, missing only the names in
-   Devanagari, and at `low` the crop-variety decoy replaces the village one
-   (`score_gliner.R`; the 80% cut for `medium` was set on this benchmark, so
-   real folders are the test that counts). The Qualtrics export: 6 of 9
+   numbers, Social Security, card and IBAN numbers, and decoys: village,
+   facility, scheme, caste, crop, city, business and street names, and
+   nine-digit order numbers. `score_piinata.R` scores a scan at the `medium`
+   level that `pii_check()` gates on and at `low`. The core catches 15 of 20
+   at `medium` with no false alarms, and 18 of 20 at `low` with two (village
+   names read as person names; order numbers shaped like SSNs, which no rule
+   can tell from SSNs without a column name). With `use_gliner()` it catches
+   18 of 20 at `medium` with no false alarms, missing the names in Devanagari
+   and the SSNs behind a question number (`score_gliner.R`; the 80% cut for
+   `medium` was set on this benchmark, so real folders are the test that
+   counts). The Qualtrics export: 6 of 9
    at `medium`, 9 of 9 at `low`. The same file in csv, dta, xlsx, parquet, tsv
    and ndjson must give the same findings.
 2. **Benchmark, text.** A txt, a docx and a pdf with planted emails, phones
@@ -225,8 +229,8 @@ A scan must be cheap enough to run on every commit.
 4. **A second opinion.** Presidio 2.2.366 with its default English pipeline
    (spaCy `en_core_web_lg`), run on the same benchmark by `score_presidio.py`.
    Judged as presidio-structured judges, by any detection in a column, it
-   catches 15 of 17 personal columns with 9 false alarms among 25; requiring
-   half the rows, 10 of 17 with 4. Its errors are instructive. spaCy reads
+   catches 18 of 20 personal columns with 10 false alarms among 26; requiring
+   half the rows, 13 of 20 with 4. Its errors are instructive. spaCy reads
    crop varieties (86% of rows), village names (81%) and scheme names (59%)
    as people. Its phone recognizer scores a match 0.4, below the usual 0.5
    cut, and relies on a word such as "phone" within five words before the

@@ -323,9 +323,8 @@ pii_redact_files <- function(path, findings = pii_scan(path, config = config),
     redact_one(report$source[i], report$status[i], findings, options, registry)
   })
   result <- do.call(rbind, c(list(file_row(character(), character())), rows))
-  written <- result$destination[result$status %in% c("redacted", "partly redacted")]
   cli::cli_inform(c(
-    "Wrote {length(written)} redacted cop{?y/ies}.",
+    "Wrote {sum(result$status %in% c('redacted', 'partly redacted'))} redacted cop{?y/ies}.",
     "i" = "The originals are unchanged and still hold the personal data."
   ))
   result

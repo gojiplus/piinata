@@ -163,6 +163,34 @@ reported as unsupported with a note to save them as docx.
   written without a country code need the project's regions in
   `.piinata.yml`, such as `regions: [IN]`.
 
+## How it compares
+
+On the benchmark in `data-raw/benchmark/`, a synthetic survey of 46 columns
+with Indian and US data, 20 of them personal and 26 not, among them decoys
+chosen to look personal (village, crop, scheme, business and street names,
+nine-digit order numbers):
+
+| Scanner | Personal columns found | False alarms |
+|---|---|---|
+| Microsoft Presidio 2.2.366, a column flagged on any detection, as presidio-structured does | 18 of 20 | 10 of 26 |
+| Presidio, a column flagged when half its rows are | 13 of 20 | 4 of 26 |
+| piinata, at the `medium` level `pii_check()` gates on | 15 of 20 | 0 of 26 |
+| piinata with `use_gliner()` | 18 of 20 | 0 of 26 |
+
+Presidio's spaCy model reads crop varieties, village and scheme names as
+people, and its phone recognizer needs a word such as "phone" just before
+the number, which a table cell never has. The scripts are
+`score_piinata.R`, `score_gliner.R` and `score_presidio.py`. The benchmark
+was written by the same hand as the detectors, so it is a stress test, not
+an estimate for your data.
+
+Several ideas come from Presidio and are credited where they are used: a
+value finding gains confidence when context agrees (for a column, its name
+and label), custom patterns can carry context words, a word list, an
+exclusion and a validation, and identity numbers are checked by their own
+rules (Presidio's US and UK rules now live in
+[idcheck](https://github.com/gojiplus/idcheck)).
+
 [How piinata works](https://gojiplus.github.io/piinata/articles/design.html)
 has the design, the benchmark it is held to and what is out of scope. The
 [roadmap](https://gojiplus.github.io/piinata/articles/roadmap.html) has what

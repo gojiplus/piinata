@@ -230,6 +230,47 @@ detect_addresses <- function(values, weight, free, regions) {
   list(finding("address", "value", "address", n, share, values[found], "medium"))
 }
 
+# Identifiers 'checkstring' validates, which idcheck leaves to it: bank
+# account numbers (IBAN, with its MOD 97-10 check), and the device and
+# record identifiers Presidio also recognizes. checkstring judges one value
+# at a time, so only values shaped like candidates are passed to it.
+checkstring_types <- list(
+  iban = list(
+    shape = "^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9 ]{10,}$", check = "is_iban", confidence = "high",
+    clean = function(v) toupper(gsub(" ", "", v, fixed = TRUE))
+  ),
+  device_id = list(
+    shape = "^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$", check = "is_mac", confidence = "medium",
+    clean = identity
+  ),
+  uuid = list(
+    shape = "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$",
+    check = "is_uuid", confidence = "low", clean = identity
+  )
+)
+
+detect_checkstring <- function(values, weight) {
+  if (!rlang::is_installed("checkstring")) {
+    return(list())
+  }
+  found <- list()
+  for (type in names(checkstring_types)) {
+    rule <- checkstring_types[[type]]
+    candidate <- grepl(rule$shape, values)
+    if (sum(weight[candidate]) / sum(weight) < 0.8) next
+    check <- getExportedValue("checkstring", rule$check)
+    valid <- candidate
+    valid[candidate] <- vapply(rule$clean(values[candidate]), check, logical(1))
+    share <- sum(weight[valid]) / sum(weight)
+    if (share >= 0.8) {
+      found <- c(found, list(finding(
+        type, "value", "checkstring", sum(weight[valid]), share, values[valid], rule$confidence
+      )))
+    }
+  }
+  found
+}
+
 detect_person_names <- function(values, weight) {
   named <- stringr::str_detect(values, patterns$person)
   share <- sum(weight[named]) / sum(weight)
@@ -237,6 +278,14 @@ detect_person_names <- function(values, weight) {
     return(list())
   }
   list(finding("person_name", "value", "person_name", sum(weight[named]), share, values, "low"))
+}
+
+# Sentences are searched match by match: running text, and columns whose
+# answers average five words or more, even when most rows repeat a stock
+# answer.
+match_by_match <- function(field, values, weight) {
+  field$kind == "text" ||
+    (length(values) > 0L && stats::weighted.mean(stringr::str_count(values, "\\S+"), weight) >= 5)
 }
 
 detect_values <- function(field, values, weight, regions = character()) {
@@ -275,7 +324,7 @@ detect_values <- function(field, values, weight, regions = character()) {
   dates <- parse_dates(values)
   found <- c(
     found, detect_birth_dates(values, weight, dates), detect_person_names(values, weight),
-    detect_identity_numbers(values, weight)
+    detect_identity_numbers(values, weight), detect_checkstring(values, weight)
   )
   bookkeeping <- !is.na(field$name) && tolower(field$name) %in% platform_bookkeeping()
   # Keys and codes are distinct on every row too; text made of several words is not a key.

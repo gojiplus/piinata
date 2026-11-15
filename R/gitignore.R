@@ -63,10 +63,9 @@ pii_ignore_originals <- function(report) {
     tracked = logical(), detail = character()
   )
   result <- do.call(rbind, c(list(empty), rows))
-  added <- result$source[result$action == "added"]
   tracked <- result$source[result$tracked %in% TRUE]
   cli::cli_inform(c(
-    "Added {length(added)} original{?s} to {.file .gitignore}.",
+    "Added {sum(result$action == 'added')} original{?s} to {.file .gitignore}.",
     "!" = if (length(tracked) > 0L) {
       "{length(tracked)} {?is/are} already tracked; {.code git rm --cached} stops tracking,
        but the history keeps {?it/them}."

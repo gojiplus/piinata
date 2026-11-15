@@ -18,6 +18,26 @@ distinct_values <- function(field, sample) {
   list(values = distinct, weight = weight)
 }
 
+# A value finding whose kind the column's name or label also names moves up a
+# grade. Phone numbers are graded with their name already.
+lift_by_context <- function(found, field, patterns) {
+  words <- tokens(paste(stats::na.omit(c(field$name, field$label)), collapse = " "))
+  if (length(words) == 0L) {
+    return(found)
+  }
+  context <- context_terms()
+  for (pattern in patterns) {
+    context[[pattern$type]] <- union(context[[pattern$type]], pattern$context)
+  }
+  lapply(found, function(f) {
+    named <- any(words %in% context[[f$type]])
+    if (f$evidence == "value" && f$type != "phone" && named) {
+      f$confidence <- upgrade(f$confidence)
+    }
+    f
+  })
+}
+
 scan_field <- function(field, show_values, sample, config) {
   observed <- distinct_values(field, sample)
   named <- detect_name(field, observed$values, config$terms)
@@ -33,6 +53,7 @@ scan_field <- function(field, show_values, sample, config) {
     detect_custom(field, observed$values, observed$weight, config$patterns)
   )
   found <- gliner_review(field, found, observed$values, observed$weight)
+  found <- lift_by_context(found, field, config$patterns)
   if (length(found) == 0L) {
     return(empty_findings())
   }
