@@ -155,16 +155,23 @@ detect_identity_numbers <- function(values, weight) {
   if (!rlang::is_installed("idcheck")) {
     return(list())
   }
+  # Phone numbers have their own detector, graded and checked with dialtone.
   schemes <- idcheck::id_schemes()
+  schemes <- schemes[schemes$scheme != "in_mobile", ]
+  # A finding's type is the kind of personal data; which scheme matched is
+  # in its detector, "idcheck:us_ssn".
+  kinds <- c(intl_payment_card = "financial_account")
   found <- list()
   for (i in seq_len(nrow(schemes))) {
+    kind <- if (schemes$scheme[i] %in% names(kinds)) kinds[[schemes$scheme[i]]] else "government_id"
     valid <- idcheck::id_valid(values, schemes$scheme[i])
     valid[is.na(valid)] <- FALSE
     share <- sum(weight[valid]) / sum(weight)
     if (share >= 0.8) {
       confidence <- if (schemes$check[i] == "checksum") "high" else "low"
       found <- c(found, list(finding(
-        schemes$scheme[i], "value", "idcheck", sum(weight[valid]), share, values[valid], confidence
+        kind, "value", paste0("idcheck:", schemes$scheme[i]), sum(weight[valid]), share,
+        values[valid], confidence
       )))
     }
   }
@@ -276,14 +283,16 @@ detect_addresses <- function(values, weight, free, regions) {
 # at a time, so only values shaped like candidates are passed to it.
 checkstring_types <- list(
   iban = list(
-    shape = "^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9 ]{10,}$", check = "is_iban", confidence = "high",
+    type = "financial_account", shape = "^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9 ]{10,}$",
+    check = "is_iban", confidence = "high",
     clean = function(v) toupper(gsub(" ", "", v, fixed = TRUE))
   ),
-  device_id = list(
-    shape = "^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$", check = "is_mac", confidence = "medium",
-    clean = identity
+  mac = list(
+    type = "device_id", shape = "^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$", check = "is_mac",
+    confidence = "medium", clean = identity
   ),
   uuid = list(
+    type = "uuid",
     shape = "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$",
     check = "is_uuid", confidence = "low", clean = identity
   )
@@ -294,8 +303,8 @@ detect_checkstring <- function(values, weight) {
     return(list())
   }
   found <- list()
-  for (type in names(checkstring_types)) {
-    rule <- checkstring_types[[type]]
+  for (scheme in names(checkstring_types)) {
+    rule <- checkstring_types[[scheme]]
     candidate <- grepl(rule$shape, values)
     if (sum(weight[candidate]) / sum(weight) < 0.8) next
     check <- getExportedValue("checkstring", rule$check)
@@ -304,7 +313,8 @@ detect_checkstring <- function(values, weight) {
     share <- sum(weight[valid]) / sum(weight)
     if (share >= 0.8) {
       found <- c(found, list(finding(
-        type, "value", "checkstring", sum(weight[valid]), share, values[valid], rule$confidence
+        rule$type, "value", paste0("checkstring:", scheme), sum(weight[valid]), share,
+        values[valid], rule$confidence
       )))
     }
   }

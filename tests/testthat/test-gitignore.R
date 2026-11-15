@@ -3,7 +3,7 @@ test_that("originals are ignored and their redacted copies are not", {
   report <- suppressMessages(pii_redact_files(file.path(dir, "data")))
   ignored <- suppressMessages(pii_ignore_originals(report))
   expect_equal(ignored$action, c("added", "added"))
-  expect_false(any(ignored$tracked))
+  expect_false(any(ignored$is_tracked))
   status <- git_in(dir, "status", "--porcelain", "--untracked-files=all")
   expect_true(any(grepl("survey_redacted.csv", status, fixed = TRUE)))
   expect_true(any(grepl("wave [2]_redacted.csv", status, fixed = TRUE)))
@@ -27,7 +27,7 @@ test_that("an original already committed is reported as tracked", {
   git_in(dir, "-c", "user.name=t", "-c", "user.email=t@example.org", "commit", "-q", "-m", "x")
   report <- suppressMessages(pii_redact_files(file.path(dir, "data", "survey.csv")))
   ignored <- suppressMessages(pii_ignore_originals(report))
-  expect_true(ignored$tracked)
+  expect_true(ignored$is_tracked)
   expect_match(ignored$detail, "git rm --cached")
 })
 

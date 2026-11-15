@@ -29,10 +29,8 @@ name_terms <- function() {
       "aadhaar", "aadhar", "pan", "passport", "voter", "epic", "ssn", "nid",
       "license", "licence", "cedula", "curp", "dni"
     ),
-    online_id = c(
-      "ip", "ipaddress", "username", "handle", "twitter", "facebook", "instagram",
-      "linkedin"
-    ),
+    ip_address = c("ip", "ipaddress", "ipv4", "ipv6"),
+    online_id = c("username", "handle", "twitter", "facebook", "instagram", "linkedin"),
     device_id = c("imei", "deviceid", "subscriberid", "simid")
   )
 }
@@ -51,6 +49,7 @@ context_terms <- function() {
       in_mobile = c("mobile", "phone", "cell", "whatsapp"),
       us_ssn = c("ssn", "ssns", "social", "security"), gb_nhs = "nhs",
       iban = c("iban", "bank", "account"),
+      financial_account = c("iban", "bank", "account", "card", "credit", "debit"),
       intl_payment_card = c("card", "credit", "debit", "visa", "mastercard", "amex", "cc")
     )
   )
@@ -80,7 +79,7 @@ not_coordinates <- function() {
 # Fields survey platforms add to every export, matched on the whole name.
 platform_terms <- function() {
   c(
-    ipaddress = "online_id", recipientlastname = "person_name",
+    ipaddress = "ip_address", recipientlastname = "person_name",
     recipientfirstname = "person_name", recipientemail = "email",
     locationlatitude = "coordinates", locationlongitude = "coordinates",
     externalreference = "online_id", deviceid = "device_id", subscriberid = "device_id",

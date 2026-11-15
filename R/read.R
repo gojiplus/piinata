@@ -90,7 +90,7 @@ pii_read <- function(path, ignore = character()) {
   attr(fields, "read_report") <- tibble::tibble(
     source = vapply(results, `[[`, character(1), "source"),
     status = vapply(results, `[[`, character(1), "status"),
-    fields = vapply(results, function(r) nrow(r$fields), integer(1)),
+    n_fields = vapply(results, function(r) nrow(r$fields), integer(1)),
     detail = vapply(results, `[[`, character(1), "detail")
   )
   fields
@@ -100,7 +100,7 @@ pii_read <- function(path, ignore = character()) {
 #'
 #' @param x The result of [pii_read()] or [pii_scan()].
 #' @return A tibble with one row per file: `source`, `status` (`read`,
-#'   `unsupported`, `failed` or `ignored`), the number of `fields` read and, when not
+#'   `unsupported`, `failed` or `ignored`), the number of fields read (`n_fields`) and, when not
 #'   read, the reason in `detail`. `NULL` if `x` did not come from files.
 #' @export
 #' @examples

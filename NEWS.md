@@ -60,6 +60,15 @@
   ("21st") no longer look like phones and streets; address cues must sit
   within 40 characters of each other; and a birth date read from values alone
   is `low` until the column's name agrees.
+* Names settled before the first release. A finding's `type` is the kind of
+  personal data and `detector` the rule that matched: identity numbers are
+  `government_id` with detector `idcheck:<scheme>` (was the scheme as type),
+  cards and IBANs `financial_account` (was `intl_payment_card`, `iban`), MAC
+  addresses `device_id` with detector `checkstring:mac`. An `IPAddress`
+  column is named `ip_address` (was `online_id`). Report columns:
+  `pii_read_report()` `fields` -> `n_fields`; `pii_ignore_originals()`
+  `tracked` -> `is_tracked`. Indian mobile numbers are left to the phone
+  detector. Source files use snake_case.
 * Latitude and longitude in neighboring columns are found as a pair, from
   their values: precise numbers in range, one within ±90. Columns named as
   rates, prices, scores and the like are never candidates. On SOTAB's test

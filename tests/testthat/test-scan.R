@@ -120,10 +120,11 @@ test_that("identity numbers with a valid checksum are strong evidence", {
   body <- sprintf("%011.0f", 20000000000 + 7919 * 1:30)
   aadhaar <- paste0(body, idcheck::id_verhoeff_digit(body))
   findings <- pii_scan(data.frame(q8 = aadhaar))
-  expect_true("in_aadhaar" %in% findings$type)
-  expect_equal(findings$confidence[findings$type == "in_aadhaar"], "high")
+  expect_true("idcheck:in_aadhaar" %in% findings$detector)
+  expect_equal(findings$type[findings$detector == "idcheck:in_aadhaar"], "government_id")
+  expect_equal(findings$confidence[findings$detector == "idcheck:in_aadhaar"], "high")
   random <- pii_scan(data.frame(q8 = sprintf("%012.0f", 2e11 + 104729 * 1:30)))
-  expect_false("in_aadhaar" %in% random$type)
+  expect_false("idcheck:in_aadhaar" %in% random$detector)
 })
 
 phone_grade <- function(data) {
@@ -228,9 +229,9 @@ test_that("IBANs, MAC addresses and UUIDs are checked by checkstring", {
   config <- pii_config("none.yml")
   types <- function(values) pii_scan(data.frame(q9 = values), config = config)$type
   ibans <- rep(c("GB82 WEST 1234 5698 7654 32", "DE89370400440532013000"), 15)
-  expect_true("iban" %in% types(ibans))
+  expect_true("financial_account" %in% types(ibans))
   wrong <- rep(c("GB83 WEST 1234 5698 7654 32", "DE88370400440532013000"), 15)
-  expect_false("iban" %in% types(wrong))
+  expect_false("financial_account" %in% types(wrong))
   macs <- sprintf("00:1A:2B:3C:4D:%02X", 1:30)
   expect_true("device_id" %in% types(macs))
 })

@@ -53,12 +53,12 @@ A scan is four stages, each in its own files, each replaceable:
 |---|---|---|
 | read | turns files and objects into fields; accounts for every file | `R/read.R`, `R/readers.R`, `R/fields.R` |
 | normalize | cleans values so patterns can match dirty data | `R/normalize.R` |
-| detect | name, value and structure evidence, one function each | `R/terms.R`, `R/detect-name.R`, `R/detect-value.R` |
+| detect | name, value and structure evidence, one function each | `R/terms.R`, `R/detect_name.R`, `R/detect_value.R`, `R/detect_custom.R`, `R/detect_table.R` |
 | report | findings, summary, the check that gates a script | `R/findings.R`, `R/scan.R`, `R/report.R` |
 
 Two more stages act on findings: decide (`R/config.R`, `R/review.R`), where a
 person allows or removes each flagged field and the decision is recorded in
-`.piinata.yml`, and redact (`R/redact.R`, `R/redact-files.R`), which drops,
+`.piinata.yml`, and redact (`R/redact.R`, `R/redact_files.R`), which drops,
 masks or pseudonymizes what was flagged, in a data frame or in a copy of each
 file written beside the original, and can keep the originals out of git
 (`R/gitignore.R`).
@@ -184,7 +184,18 @@ Around it:
   script or CI job can gate on it.
 - `pii_detectors()` lists the registry; `pii_detector()` builds a custom one.
 
-Function names share the `pii_` prefix; arguments are data first.
+Function names share the `pii_` prefix, except where R has a convention of
+its own: `as_pii_fields()` converts, as `as_*()` functions do, and
+`use_gliner()` sets up a backend, as `use_*()` functions do. Arguments are
+data first.
+
+A finding's `type` is the kind of personal data, from a small vocabulary
+that does not change with the rule that found it: `person_name`, `phone`,
+`email`, `address`, `date_of_birth`, `location`, `coordinates`,
+`government_id`, `financial_account`, `ip_address`, `online_id`,
+`device_id`, `uuid`, and for structure `free_text` and `unique_text`, plus
+the types of a project's own patterns. Which rule matched is in `detector`:
+`idcheck:us_ssn`, `checkstring:iban`, `gliner`, `custom:study_id`.
 
 ## Speed
 

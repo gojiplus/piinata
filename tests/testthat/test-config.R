@@ -152,7 +152,7 @@ test_that("a column's name lifts what its values show", {
   ssn <- sprintf("%03d-%02d-%04d", sample(1:665, 60), sample(1:99, 60, TRUE), sample(1:9999, 60))
   grade <- function(data) {
     found <- pii_scan(data, config = pii_config("none.yml"))
-    found$confidence[found$type == "us_ssn"]
+    found$confidence[found$detector == "idcheck:us_ssn"]
   }
   expect_equal(grade(data.frame(q24 = ssn)), "low")
   expect_equal(grade(data.frame(ssn_number = ssn)), "medium")

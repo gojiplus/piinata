@@ -30,7 +30,8 @@ lift_by_context <- function(found, field, patterns) {
     context[[pattern$type]] <- union(context[[pattern$type]], pattern$context)
   }
   lapply(found, function(f) {
-    named <- any(words %in% context[[f$type]])
+    scheme <- sub("^[a-z]+:", "", f$detector)
+    named <- any(words %in% union(context[[f$type]], context[[scheme]]))
     if (f$evidence == "value" && f$type != "phone" && named) {
       f$confidence <- upgrade(f$confidence)
     }
@@ -101,7 +102,12 @@ scan_field <- function(field, show_values, sample, config) {
 #'   ignore, custom patterns and extra terms.
 #' @return A tibble with one row per finding: `source`, `locator`, `name`,
 #'   `label`, `type`, `evidence` (`name`, `value` or `structure`), `detector`,
-#'   `n` and `share` of matching values, `examples` and `confidence`.
+#'   `n` and `share` of matching values, `examples` and `confidence`. `type`
+#'   is the kind of personal data: `person_name`, `phone`, `email`,
+#'   `address`, `date_of_birth`, `location`, `coordinates`, `government_id`,
+#'   `financial_account`, `ip_address`, `online_id`, `device_id`, `uuid`,
+#'   `free_text`, `unique_text`, or a custom pattern's type. `detector` says
+#'   which rule matched, such as `idcheck:us_ssn`.
 #' @export
 #' @examples
 #' survey <- data.frame(

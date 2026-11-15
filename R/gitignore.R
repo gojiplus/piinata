@@ -34,12 +34,12 @@ is_ignored <- function(root, relative) {
 #'
 #' It does not rewrite history. An original already committed stays in the
 #' repository's past, and stays tracked until removed with
-#' `git rm --cached`; such files are reported as `tracked`.
+#' `git rm --cached`; such files are reported with `is_tracked`.
 #'
 #' @param report The result of [pii_redact_files()].
 #' @return A tibble with one row per redacted original: `source`, the
 #'   `gitignore` file changed, the `action` taken (`added`, `already ignored`
-#'   or `not in a git repository`), whether the original is `tracked`, and
+#'   or `not in a git repository`), whether the original `is_tracked`, and
 #'   `detail`.
 #' @export
 #' @examples
@@ -60,10 +60,10 @@ pii_ignore_originals <- function(report) {
   })
   empty <- tibble::tibble(
     source = character(), gitignore = character(), action = character(),
-    tracked = logical(), detail = character()
+    is_tracked = logical(), detail = character()
   )
   result <- do.call(rbind, c(list(empty), rows))
-  tracked <- result$source[result$tracked %in% TRUE]
+  tracked <- result$source[result$is_tracked %in% TRUE]
   cli::cli_inform(c(
     "Added {sum(result$action == 'added')} original{?s} to {.file .gitignore}.",
     "!" = if (length(tracked) > 0L) {
@@ -77,7 +77,7 @@ pii_ignore_originals <- function(report) {
 ignore_original <- function(source, destination) {
   row <- function(gitignore, action, tracked, detail = NA_character_) {
     tibble::tibble(
-      source = source, gitignore = gitignore, action = action, tracked = tracked, detail = detail
+      source = source, gitignore = gitignore, action = action, is_tracked = tracked, detail = detail
     )
   }
   path <- as.character(fs::path_real(source))

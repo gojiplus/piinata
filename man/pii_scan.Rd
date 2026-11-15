@@ -24,7 +24,12 @@ ignore, custom patterns and extra terms.}
 \value{
 A tibble with one row per finding: \code{source}, \code{locator}, \code{name},
 \code{label}, \code{type}, \code{evidence} (\code{name}, \code{value} or \code{structure}), \code{detector},
-\code{n} and \code{share} of matching values, \code{examples} and \code{confidence}.
+\code{n} and \code{share} of matching values, \code{examples} and \code{confidence}. \code{type}
+is the kind of personal data: \code{person_name}, \code{phone}, \code{email},
+\code{address}, \code{date_of_birth}, \code{location}, \code{coordinates}, \code{government_id},
+\code{financial_account}, \code{ip_address}, \code{online_id}, \code{device_id}, \code{uuid},
+\code{free_text}, \code{unique_text}, or a custom pattern's type. \code{detector} says
+which rule matched, such as \code{idcheck:us_ssn}.
 }
 \description{
 Looks at each field three ways: what it is called (its name, label or

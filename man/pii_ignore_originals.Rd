@@ -12,7 +12,7 @@ pii_ignore_originals(report)
 \value{
 A tibble with one row per redacted original: \code{source}, the
 \code{gitignore} file changed, the \code{action} taken (\code{added}, \verb{already ignored}
-or \verb{not in a git repository}), whether the original is \code{tracked}, and
+or \verb{not in a git repository}), whether the original \code{is_tracked}, and
 \code{detail}.
 }
 \description{
@@ -25,7 +25,7 @@ redacted copy that an existing rule would also hide is reported.
 \details{
 It does not rewrite history. An original already committed stays in the
 repository's past, and stays tracked until removed with
-\verb{git rm --cached}; such files are reported as \code{tracked}.
+\verb{git rm --cached}; such files are reported with \code{is_tracked}.
 }
 \examples{
 \dontrun{
