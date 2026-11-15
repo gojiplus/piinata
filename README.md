@@ -124,17 +124,22 @@ reported, with the command that stops tracking it.
 
 | Kind | Formats | Needs |
 |---|---|---|
-| Delimited text | csv, tsv, psv | |
-| Spreadsheets | xlsx, xls, every sheet | |
+| Delimited text | csv, tsv, psv, also compressed | |
+| Spreadsheets | xlsx, xlsm, xls, every sheet; ods | readODS for ods |
 | Statistical packages | Stata, SPSS, SAS, with variable and value labels | |
-| R | rds | |
-| Plain text | txt, md, log, do, R, tex and similar | |
+| R | rds, RData | |
+| Plain text | scripts and logs (R, Stata, SAS, SPSS, Python, Julia, MATLAB, shell), md, tex, yaml, xml | |
+| Contacts, mail, transcripts | vcf, eml, mbox, ics, srt, vtt | |
+| Archives | zip, tar, tgz, gz, bz2, xz; members are read and named `archive.zip!member` | |
 | Survey platforms | Qualtrics exports, with question text | qualtRics |
-| Columnar and JSON | parquet, json, jsonl | nanoparquet, jsonlite |
-| Documents | pdf, docx, rtf, html | pdftools, officer, striprtf, rvest |
+| Columnar, JSON, databases | parquet, json, jsonl, SQLite | nanoparquet, jsonlite, RSQLite |
+| Notebooks | Jupyter, including printed outputs | jsonlite |
+| Geographic | GeoJSON, KML/KMZ, shapefiles, GeoPackage | jsonlite, xml2, foreign, sf |
+| Documents | pdf, docx, pptx, rtf, html | pdftools, officer, striprtf, rvest |
 
-The last three rows use suggested packages. When one is missing the file is
-reported as unsupported, with the package to install.
+Packages in the last column are suggested. When one is missing the file is
+reported as unsupported, with the package to install. Legacy `.doc` files are
+reported as unsupported with a note to save them as docx.
 
 ## What it looks for
 

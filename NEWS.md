@@ -39,6 +39,13 @@
   'reticulate', which takes a second look at text columns the rules leave
   uncertain: it adds a person-name finding when most rows name people, and
   withdraws the rules' guess when they name places or organizations.
+* `pii_read()` reads more formats: zip and tar archives member by member
+  (`archive.zip!member`), Jupyter notebooks with their outputs, GeoJSON,
+  KML/KMZ, shapefiles and GeoPackages (coordinates and attributes), SQLite
+  databases, ods, xlsm and pptx files, and as text, scripts for SAS, SPSS,
+  Julia, MATLAB and the shell, contact cards, mail, calendars and
+  transcripts. Shapefile side files are reported as ignored; legacy `.doc`
+  files as unsupported, with what to do.
 * `pii_ignore_originals()` adds the originals of redacted files to
   `.gitignore`, one rule per file, checks each rule with `git check-ignore`,
   and reports originals already tracked and copies an existing rule hides.

@@ -10,7 +10,18 @@ unwritable <- c(
   docx = "documents cannot be written back; redact the source document",
   rtf = "documents cannot be written back; redact the source document",
   html = "documents cannot be written back; redact the source document",
-  htm = "documents cannot be written back; redact the source document"
+  htm = "documents cannot be written back; redact the source document",
+  pptx = "documents cannot be written back; redact the source document",
+  ods = "writing OpenDocument spreadsheets is not supported; save the data as xlsx or csv",
+  ipynb = "notebooks cannot be written back; clear the outputs and redact the data",
+  geojson = "geographic files cannot be written back yet",
+  kml = "geographic files cannot be written back yet",
+  shp = "geographic files cannot be written back yet",
+  dbf = "geographic files cannot be written back yet",
+  gpkg = "geographic files cannot be written back yet",
+  sqlite = "databases cannot be written back; redact the tables and rebuild it",
+  sqlite3 = "databases cannot be written back; redact the tables and rebuild it",
+  db = "databases cannot be written back; redact the tables and rebuild it"
 )
 
 # "survey.csv.gz" -> "survey_redacted.csv.gz"; an Excel file is always
@@ -200,6 +211,9 @@ redact_one <- function(source, read_status, findings, options, registry) {
   }
   if (nrow(findings) == 0L) {
     return(file_row(source, "clean", detail = paste(c("nothing to redact", weak), collapse = "; ")))
+  }
+  if (!fs::file_exists(source) && grepl("!", source, fixed = TRUE)) {
+    return(file_row(source, "unsupported", detail = "inside an archive; extract it to redact it"))
   }
   type <- file_type(source)
   if (type %in% names(unwritable)) {

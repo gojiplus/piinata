@@ -113,8 +113,12 @@ read_html_file <- function(path) {
   fields_from_text(stringr::str_split(text, "\n")[[1]], path, "lines")
 }
 
+# Scripts and logs can list rows of data; contact cards, mail, calendars and
+# transcripts are mostly personal data.
 text_extensions <- c(
-  "txt", "md", "log", "do", "r", "rmd", "qmd", "py", "tex", "bib", "smcl", "sql", "yaml", "yml"
+  "txt", "md", "log", "do", "ado", "r", "rmd", "qmd", "rhistory", "py", "jl", "m", "sas", "sps",
+  "lst", "sh", "tex", "bib", "smcl", "sql", "yaml", "yml", "toml", "ini", "cfg", "xml",
+  "vcf", "eml", "mbox", "ics", "srt", "vtt"
 )
 
 readers <- function() {
@@ -137,6 +141,7 @@ readers <- function() {
       pdf = read_pdf_file, docx = read_docx_file, rtf = read_rtf_file,
       html = read_html_file, htm = read_html_file
     ),
-    stats::setNames(rep(list(read_text_file), length(text_extensions)), text_extensions)
+    stats::setNames(rep(list(read_text_file), length(text_extensions)), text_extensions),
+    more_readers()
   )
 }

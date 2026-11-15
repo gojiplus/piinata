@@ -20,18 +20,24 @@ Language: en-US
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
 Suggests: 
+    DBI,
     dialtone,
+    foreign,
     idcheck,
     jsonlite,
     nanoparquet,
     officer,
     pdftools,
     qualtRics,
+    readODS,
     reticulate (>= 1.41),
+    RSQLite,
     rvest,
+    sf,
     striprtf,
     testthat (>= 3.0.0),
-    writexl
+    writexl,
+    xml2
 Config/testthat/edition: 3
 Imports: 
     cli,

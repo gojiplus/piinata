@@ -2,12 +2,16 @@ compression_extensions <- c("gz", "bz2", "xz", "zip")
 delimited_extensions <- c("csv", "tsv", "tab", "psv")
 
 # readr reads and writes compressed delimited files directly, so
-# "survey.csv.gz" is a csv. Other compressed files are of type "compressed".
+# "survey.csv.gz" is a csv. Other compressed files, and archives, are of type
+# "archive" and are read member by member.
 file_type <- function(path) {
   packed <- tolower(fs::path_ext(path)) %in% compression_extensions
   extension <- tolower(fs::path_ext(if (packed) fs::path_ext_remove(path) else path))
   if (packed && !extension %in% delimited_extensions) {
-    extension <- "compressed"
+    return("archive")
+  }
+  if (tolower(fs::path_ext(path)) %in% archive_extensions) {
+    return("archive")
   }
   extension
 }
@@ -25,6 +29,9 @@ read_one <- function(path, registry) {
     },
     piinata_unsupported = function(e) {
       list(fields = new_fields(), status = "unsupported", detail = conditionMessage(e))
+    },
+    piinata_ignored = function(e) {
+      list(fields = new_fields(), status = "ignored", detail = conditionMessage(e))
     },
     error = function(e) {
       list(fields = new_fields(), status = "failed", detail = conditionMessage(e))
@@ -70,15 +77,18 @@ pii_read <- function(path, ignore = character()) {
   files <- unique(as.character(files))
   registry <- readers()
   skipped <- matches_glob(files, ignore)
-  results <- lapply(seq_along(files), function(i) {
+  results <- unlist(lapply(seq_along(files), function(i) {
     if (skipped[i]) {
-      return(list(fields = new_fields(), status = "ignored", detail = "listed under ignore"))
+      return(list(list(
+        source = files[i], fields = new_fields(), status = "ignored",
+        detail = "listed under ignore"
+      )))
     }
-    read_one(files[i], registry)
-  })
+    read_path(files[i], registry, ignore)
+  }), recursive = FALSE)
   fields <- do.call(rbind, c(list(new_fields()), lapply(results, `[[`, "fields")))
   attr(fields, "read_report") <- tibble::tibble(
-    source = files,
+    source = vapply(results, `[[`, character(1), "source"),
     status = vapply(results, `[[`, character(1), "status"),
     fields = vapply(results, function(r) nrow(r$fields), integer(1)),
     detail = vapply(results, `[[`, character(1), "detail")

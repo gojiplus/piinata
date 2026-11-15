@@ -107,6 +107,13 @@ Readers are the tidyverse and r-lib packages social scientists already use:
 | docx | `officer` | |
 | rtf | `striprtf` | |
 | html | `rvest` | |
+| zip, tar, tgz, gz, bz2, xz | base R (`unzip`, `untar`, connections) | members read like files and named `archive!member`; nested three deep; over 2 GB unpacked is reported |
+| ipynb | `jsonlite` | cell source and printed outputs, one field per cell |
+| geojson, kml, kmz | `jsonlite`, `xml2` | attributes, plus each feature's first coordinate pair as `longitude` and `latitude` |
+| shp, dbf, gpkg | `sf`, `foreign` | attributes from the .dbf; geometry as a point on each shape, in degrees; side files ignored |
+| sqlite, db | `RSQLite` | every table; a .db that is not SQLite is unsupported |
+| ods, xlsm, pptx | `readODS`, `readxl`, `officer` | every sheet; one field per slide |
+| vcf, eml, mbox, ics, srt, vtt, and scripts | `readr::read_lines()` | contacts, mail, calendars and transcripts are mostly personal data |
 | data frame, character vector | none | passed straight through |
 
 `readr`, `readxl` and `haven` are imports. The rest are suggested and checked
@@ -114,10 +121,11 @@ at run time: a missing package produces an "unsupported: install X" row in the
 read report, not an error.
 
 Still to read, in the order social scientists meet them: SurveyCTO and
-KoboToolbox/ODK exports (repeat groups, media file names), REDCap exports with
-their data dictionary, SurveyMonkey and Google Forms headers, ods, doc, Stata
-logs in smcl, and the file names themselves, which often carry a respondent's
-name.
+KoboToolbox/ODK exports with their form definitions (question text as labels,
+repeat groups, media file names), REDCap exports with their data dictionary,
+SurveyMonkey and Google Forms headers, and the file names themselves, which
+often carry a respondent's name. Legacy .doc files need an external converter
+and are reported as unsupported.
 
 Not in the first release: images and scanned PDFs (would use `tesseract`),
 email archives, databases, live survey-platform APIs (`rsurveycto`,
