@@ -146,6 +146,10 @@ reported as unsupported, with the package to install.
   birth, coordinates, postal addresses and person names.
 - **Behavior:** free-text answers, and text that is different on nearly every
   row.
+- **Names behind question numbers:** with `use_gliner()`, an optional
+  named-entity model (Python, through reticulate) takes a second look at
+  columns the rules leave uncertain, and tells person names from place
+  names.
 - **Identity numbers:** Aadhaar, GSTIN, PAN and others, when the
   [idcheck](https://github.com/gojiplus/idcheck) package is installed.
 - **Phone numbers against numbering plans:** when the

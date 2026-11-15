@@ -14,6 +14,10 @@ reference:
     contents:
       - pii_review
       - pii_config
+  - title: Backends
+    desc: Optional models for what rules cannot decide.
+    contents:
+      - use_gliner
   - title: Redact
     desc: Remove or replace what was flagged.
     contents:

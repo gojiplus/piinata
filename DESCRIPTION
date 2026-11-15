@@ -27,6 +27,7 @@ Suggests:
     officer,
     pdftools,
     qualtRics,
+    reticulate (>= 1.41),
     rvest,
     striprtf,
     testthat (>= 3.0.0),

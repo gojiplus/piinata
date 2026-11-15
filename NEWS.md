@@ -35,6 +35,10 @@
 * The benchmark gains Indian and US names and addresses, names in lower case
   and Devanagari, and decoy columns of place, facility, scheme, caste, crop,
   city, business and street names; `score_piinata.R` scores a scan against it.
+* `use_gliner()` turns on an optional named-entity backend, GLiNER through
+  'reticulate', which takes a second look at text columns the rules leave
+  uncertain: it adds a person-name finding when most rows name people, and
+  withdraws the rules' guess when they name places or organizations.
 * `pii_ignore_originals()` adds the originals of redacted files to
   `.gitignore`, one rule per file, checks each rule with `git check-ignore`,
   and reports originals already tracked and copies an existing rule hides.

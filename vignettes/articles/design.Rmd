@@ -148,7 +148,7 @@ Optional backends, each behind one function and one suggested package:
 
 | Backend | Adds | Requires |
 |---|---|---|
-| `use_gliner()` (planned) | a second look at columns the rules leave uncertain: names behind question numbers, names in lower case or Devanagari, place names the heuristic takes for people; votes on whole columns, never decides a cell | `reticulate`; the Python `gliner` package and the Apache-2.0 `urchade/gliner_multi_pii-v1` model, declared with `py_require()` |
+| `use_gliner()` | a second look at columns the rules leave uncertain: names behind question numbers, names in lower case or Devanagari, place names the heuristic takes for people; votes on whole columns, never decides a cell | `reticulate`; the Python `gliner` package and the Apache-2.0 `urchade/gliner_multi_pii-v1` model, declared with `py_require()` |
 
 Presidio is not a backend: its pattern recognizers repeat what the core,
 `idcheck` and `dialtone` do, its name and place detection is whichever model
@@ -203,7 +203,11 @@ A scan must be cheap enough to run on every commit.
    that `pii_check()` gates on and at `low`. The core now catches 13 of 17 at
    `medium` with no false alarms, and 15 of 17 at `low` with one (village
    names read as person names). What it misses are names behind question
-   numbers, the job of a named-entity backend. The Qualtrics export: 6 of 9
+   numbers, the job of a named-entity backend: with `use_gliner()` it catches
+   16 of 17 at `medium` with no false alarms, missing only the names in
+   Devanagari, and at `low` the crop-variety decoy replaces the village one
+   (`score_gliner.R`; the 80% cut for `medium` was set on this benchmark, so
+   real folders are the test that counts). The Qualtrics export: 6 of 9
    at `medium`, 9 of 9 at `low`. The same file in csv, dta, xlsx, parquet, tsv
    and ndjson must give the same findings.
 2. **Benchmark, text.** A txt, a docx and a pdf with planted emails, phones

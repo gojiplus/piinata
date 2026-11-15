@@ -32,6 +32,7 @@ scan_field <- function(field, show_values, sample, config) {
     detect_values(field, observed$values, observed$weight, config$regions),
     detect_custom(field, observed$values, observed$weight, config$patterns)
   )
+  found <- gliner_review(field, found, observed$values, observed$weight)
   if (length(found) == 0L) {
     return(empty_findings())
   }

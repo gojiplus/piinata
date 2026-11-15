@@ -53,7 +53,8 @@ remove.
 | 0.3.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports; file-name scanning | |
 | 0.4.0 | pre-commit hook and GitHub Action | |
 | | address rule; benchmark decoys and US columns; `score_piinata.R` | done |
-| 0.5.0 | `use_gliner()`; Presidio comparison vignette | |
+| | `use_gliner()`: a second look at uncertain columns | done |
+| 0.5.0 | Presidio comparison vignette; names in Devanagari | |
 | | phone validation with `dialtone` and a `regions` setting | done |
 | 0.6.0 | URL parts | |
 
