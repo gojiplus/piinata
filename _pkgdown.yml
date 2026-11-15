@@ -19,6 +19,7 @@ reference:
     contents:
       - pii_redact
       - pii_redact_files
+      - pii_ignore_originals
   - title: Read
     desc: Turn files and objects into fields, and account for every file.
     contents:

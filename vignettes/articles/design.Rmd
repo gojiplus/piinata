@@ -59,7 +59,8 @@ Two more stages act on findings: decide (`R/config.R`, `R/review.R`), where a
 person allows or removes each flagged field and the decision is recorded in
 `.piinata.yml`, and redact (`R/redact.R`, `R/redact-files.R`), which drops,
 masks or pseudonymizes what was flagged, in a data frame or in a copy of each
-file written beside the original.
+file written beside the original, and can keep the originals out of git
+(`R/gitignore.R`).
 
 Normalization exists because real exports are dirty. It applies Unicode
 compatibility normalization, turns decimal digits of any script into ASCII

@@ -111,7 +111,14 @@ are kept. Delimited text, Excel, Stata, SPSS, SAS transport, R data, Parquet
 and plain-text files can be written back; SAS data files, JSON and documents
 are reported as unsupported. The originals are not changed: until they are
 removed or kept out of version control, the personal data are still in the
-project.
+project. To keep them out of git, add each one to `.gitignore`:
+
+``` r
+pii_ignore_originals(report)
+```
+
+This does not rewrite history; an original that was already committed is
+reported, with the command that stops tracking it.
 
 ## What it reads
 

@@ -9,7 +9,7 @@ Changes to this page are proposals; open an issue to argue with one.
 
 Researchers call it from R. Projects also need it in the flow of work:
 
-1. **Review and exceptions.** `pii_review()` would write the findings as a
+1. **Review and exceptions.** `pii_review()` writes the findings as a
    file with a decision column for a person to fill in. A committed `.piinata.yml` holds what has been reviewed:
    fields and files that may stay, detectors turned off, thresholds, and extra
    terms. `pii_check()` reads it. An exception names a field and a reason, not
@@ -21,7 +21,7 @@ Researchers call it from R. Projects also need it in the flow of work:
    GitHub Action that scan the files a commit touches and fail on unreviewed
    findings. A Python port is on the table if no Python package does the same
    job, since most hooks run in Python environments.
-4. **Redaction.** The levels are: report (now); drop a field; replace values
+4. **Redaction.** The levels are: report; drop a field; replace values
    with a placeholder of the same type; replace with a stable pseudonym, so
    joins and counts still work; and a custom function. The model is Presidio's
    split between an analyzer that returns typed spans with scores and an
@@ -29,10 +29,10 @@ Researchers call it from R. Projects also need it in the flow of work:
    encrypt, custom). `pii_scan()` is the analyzer; `pii_redact()` is the
    anonymizer, and `pii_redact_files()` writes a clean copy beside the
    original. Still to do: JSON, and a custom function as a method.
-5. **Originals out of git.** With a clean copy written, the original can be
-   added to `.gitignore` and the clean copy committed. This is opt-in and
-   prints what it did; it does not rewrite history, so an original already
-   committed stays in the repository's past.
+5. **Originals out of git.** Done: `pii_ignore_originals()` adds each
+   original to `.gitignore` so the clean copy can be committed. It is opt-in
+   and reports what it did; it does not rewrite history, so an original
+   already committed stays in the repository's past.
 6. **URLs and browsing data.** A URL can carry personal data in its user,
    path and query string. A URL detector would parse with a maintained parser
    and report or strip those parts while keeping the host.
@@ -48,6 +48,7 @@ remove.
 | | `.piinata.yml` exceptions, custom patterns, ignore globs, review and accept | done |
 | | `pii_redact()` for data frames: drop, placeholder, mask, pseudonym | done |
 | | `pii_redact_files()`: a redacted copy beside each original (planned for 0.2.0) | done |
+| | `pii_ignore_originals()`: originals out of git | done |
 | 0.1.0 | first CRAN release, after `idcheck` | |
 | 0.3.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports; file-name scanning | |
 | 0.4.0 | pre-commit hook and GitHub Action | |

@@ -24,6 +24,9 @@
   (delimited text, Excel, Stata, SPSS, SAS transport, R data, Parquet and
   plain text) and reports on every file, including the ones it cannot write
   back and the fields left below the confidence threshold.
+* `pii_ignore_originals()` adds the originals of redacted files to
+  `.gitignore`, one rule per file, checks each rule with `git check-ignore`,
+  and reports originals already tracked and copies an existing rule hides.
 * The package is named piinata; it was briefly piiscan. The configuration file
   is `.piinata.yml`.
 * Phone-like numbers are graded by how they are written and how much of a
