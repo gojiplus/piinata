@@ -17,3 +17,10 @@ test_that("normalizing leaves ordinary text alone", {
   expect_equal(normalize_values(text), text)
   expect_equal(normalize_values("  two   spaces "), "two spaces")
 })
+
+test_that("HTML character references are decoded", {
+  expect_equal(
+    normalize_values(c("info&#64;example&#46;org", "a&#x40;b.org", "Tom &amp; Jerry", "&#0;")),
+    c("info@example.org", "a@b.org", "Tom & Jerry", "&#0;")
+  )
+})

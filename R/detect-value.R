@@ -8,8 +8,13 @@ patterns <- list(
 is_phone_like <- function(candidate) {
   digits <- stringr::str_count(candidate, "\\d")
   dated <- stringr::str_detect(candidate, "^\\d{4}[-./]\\d{1,2}[-./]\\d{1,2}")
-  dotted <- stringr::str_detect(candidate, "^\\d+(?:\\.\\d+){1,3}$")
-  digits >= 10L & digits <= 13L & !dated & !dotted
+  # Decimals have one point and IP addresses four groups of up to three
+  # digits; 970.369.7799 is how many people write a phone number.
+  dotted <- stringr::str_detect(candidate, "^\\d+\\.\\d+$|^\\d{1,3}(?:\\.\\d{1,3}){3}$")
+  # "1699-1707 (56" is a span of years and a page count.
+  year <- "(?:1[0-9]|20)\\d{2}"
+  years <- stringr::str_detect(candidate, paste0("^", year, "\\s?[-/]\\s?", year, "(?!\\d)"))
+  digits >= 10L & digits <= 13L & !dated & !dotted & !years
 }
 
 # Each detector sees the distinct values of a field and how often each occurs,
@@ -128,8 +133,11 @@ detect_birth_dates <- function(values, weight, dates = parse_dates(values)) {
   if (typical < 1900 || typical > lubridate::year(Sys.Date()) - 10) {
     return(list())
   }
+  # Any column of past dates looks like this, publication and visit dates
+  # alike, so values alone are weak evidence; a name or label that says
+  # birth lifts it (lift_by_context()).
   list(finding(
-    "date_of_birth", "value", "birth_date", sum(weight[parsed]), share, values[parsed], "medium"
+    "date_of_birth", "value", "birth_date", sum(weight[parsed]), share, values[parsed], "low"
   ))
 }
 
@@ -166,7 +174,7 @@ detect_identity_numbers <- function(values, weight) {
 # Postcodes come from Google's address metadata (data-raw/postcodes.R) for the
 # project's `regions`; without regions, every country's pattern of five or
 # more characters is used, leaving out four-digit codes that look like years
-# and the few that would take a ten-digit phone number for a postcode.
+# and the few that would take a phone number or a month for a postcode.
 postcode_cache <- new.env(parent = emptyenv())
 
 postcode_cue <- function(regions) {
@@ -184,16 +192,22 @@ build_postcode_cue <- function(regions) {
     shortest <- vapply(strsplit(postcodes$example, ",", fixed = TRUE), function(e) {
       min(nchar(gsub("\\s", "", e)))
     }, numeric(1))
-    phone <- vapply(postcodes$pattern, function(pattern) {
-      stringi::stri_detect_regex("9876543210", paste0("^(?:", pattern, ")$"))
+    # Patterns that would also take a phone number or a month and year
+    # ("MAR 2020" is a Maltese postcode) are left to projects that name the
+    # region.
+    lookalikes <- c("9876543210", "MAR 2020", "JAN 2021", "DEC 1999")
+    confusable <- vapply(postcodes$pattern, function(pattern) {
+      any(stringi::stri_detect_regex(lookalikes, paste0("^(?:", pattern, ")$")))
     }, logical(1))
-    postcodes[!is.na(shortest) & shortest >= 5 & !phone, ]
+    postcodes[!is.na(shortest) & shortest >= 5 & !confusable, ]
   }
   if (nrow(rows) == 0L) {
     return(NULL)
   }
   alternatives <- paste(unique(rows$pattern), collapse = "|")
-  paste0("(?<![\\p{L}\\p{N}])(?:", alternatives, ")(?![\\p{L}\\p{N}])")
+  # Some countries' patterns allow letters only, which would take "ALL CAPS"
+  # for a postcode; a postcode found here must hold a digit.
+  paste0("(?<![\\p{L}\\p{N}])(?=[\\p{L}\\p{N} -]{0,9}\\d)(?:", alternatives, ")(?![\\p{L}\\p{N}])")
 }
 
 house_cue <- paste0(
@@ -204,7 +218,7 @@ house_cue <- paste0(
 )
 
 area_cue <- paste0(
-  "(?i)(?<![\\p{L}\\p{M}])(?:street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|lane|ln|",
+  "(?i)(?<![\\p{L}\\p{M}\\p{N}])(?:street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|lane|ln|",
   "court|ct|place|pl|way|highway|hwy|parkway|pkwy|terrace|county|ward|gali|marg|mohalla|",
   "colony|sector|village|vill|post|tehsil|taluka|taluk|district|dist|zila|block|near|chowk|",
   "basti|tola|\u0917\u094d\u0930\u093e\u092e|\u092a\u094b\u0938\u094d\u091f|",
@@ -212,12 +226,30 @@ area_cue <- paste0(
   "(?![\\p{L}\\p{M}])"
 )
 
+# The cues must sit near each other, as Presidio looks for context words
+# just before a match: in a long review, "post" and a model number far apart
+# are not an address.
+address_window <- 40L
+
 is_address <- function(values, regions = character()) {
   cues <- c(postcode_cue(regions), house_cue, area_cue)
-  hits <- vapply(cues, function(cue) {
-    stringi::stri_detect_regex(values, cue)
-  }, logical(length(values)))
-  rowSums(matrix(hits, nrow = length(values))) >= 2L
+  found <- rep(FALSE, length(values))
+  some <- Reduce(`+`, lapply(cues, function(cue) stringi::stri_detect_regex(values, cue))) >= 2L
+  some[is.na(some)] <- FALSE
+  candidates <- which(some)
+  located <- lapply(cues, function(cue) {
+    lapply(stringi::stri_locate_all_regex(values[candidates], cue), function(m) m[, 1])
+  })
+  found[candidates] <- vapply(seq_along(candidates), function(j) {
+    places <- lapply(located, `[[`, j)
+    starts <- unlist(places)
+    kinds <- rep(seq_along(places), lengths(places))
+    keep <- !is.na(starts)
+    near <- abs(outer(starts[keep], starts[keep], `-`)) <= address_window &
+      outer(kinds[keep], kinds[keep], `!=`)
+    any(near)
+  }, logical(1))
+  found
 }
 
 detect_addresses <- function(values, weight, free, regions) {

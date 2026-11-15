@@ -54,6 +54,12 @@
   ones do.
 * IBANs, MAC addresses and UUIDs are checked with 'checkstring'; US Social
   Security, UK NHS and payment card numbers with 'idcheck', when installed.
+* Lessons from real web tables (SOTAB): HTML character references are
+  decoded before matching, so obfuscated addresses such as `info&#64;...` are
+  found; dotted phone numbers (970.369.7799) count; year spans and ordinals
+  ("21st") no longer look like phones and streets; address cues must sit
+  within 40 characters of each other; and a birth date read from values alone
+  is `low` until the column's name agrees.
 * `pii_ignore_originals()` adds the originals of redacted files to
   `.gitignore`, one rule per file, checks each rule with `git check-ignore`,
   and reports originals already tracked and copies an existing rule hides.

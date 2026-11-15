@@ -234,3 +234,21 @@ test_that("IBANs, MAC addresses and UUIDs are checked by checkstring", {
   macs <- sprintf("00:1A:2B:3C:4D:%02X", 1:30)
   expect_true("device_id" %in% types(macs))
 })
+
+test_that("year spans, ordinals and dotted phones are read as people write them", {
+  expect_false(is_phone_like("1699-1707 (56"))
+  expect_true(is_phone_like("970.369.7799"))
+  expect_false(is_phone_like("192.168.10.1"))
+  expect_false(is_address("21 Lessons for the 21st Century"))
+  expect_false(is_address("General Election|JAN-MAR 2020|block 12"))
+})
+
+test_that("birth dates from values alone are weak until the name agrees", {
+  dates <- sprintf("%02d/03/1984", 1:28)
+  grade <- function(data) {
+    found <- pii_scan(data, config = pii_config("none.yml"))
+    found$confidence[found$type == "date_of_birth" & found$evidence == "value"]
+  }
+  expect_equal(grade(data.frame(q4 = dates)), "low")
+  expect_equal(grade(data.frame(birth_date = dates)), "medium")
+})
