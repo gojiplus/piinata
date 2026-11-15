@@ -34,6 +34,7 @@ patterns:
     confidence: high
 terms:
   person_name: [mukhiya]
+regions: [IN]
 min_confidence: medium
 sample: 10000
 }\if{html}{\out{</div>}}
@@ -41,7 +42,10 @@ sample: 10000
 An \code{allow} entry names a \code{field}, a \code{type} of finding, a \code{source} glob, or
 any combination, and must give a \code{reason}. Custom \code{patterns} are regular
 expressions tried on values; \code{terms} add words to the vocabulary used on
-field names and labels.
+field names and labels. \code{regions} names the countries whose numbering plans
+judge phone numbers written without a country code, as two-letter codes
+(see \code{dialtone::phone_regions()}); it is used when the 'dialtone' package
+is installed.
 }
 \examples{
 file <- tempfile(fileext = ".yml")

@@ -148,6 +148,11 @@ reported as unsupported, with the package to install.
   row.
 - **Identity numbers:** Aadhaar, GSTIN, PAN and others, when the
   [idcheck](https://github.com/gojiplus/idcheck) package is installed.
+- **Phone numbers against numbering plans:** when the
+  [dialtone](https://github.com/gojiplus/dialtone) package is installed,
+  numbers are checked against Google's libphonenumber metadata. Numbers
+  written without a country code need the project's regions in
+  `.piinata.yml`, such as `regions: [IN]`.
 
 [How piinata works](https://gojiplus.github.io/piinata/articles/design.html)
 has the design, the benchmark it is held to and what is out of scope. The

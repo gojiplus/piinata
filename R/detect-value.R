@@ -46,17 +46,54 @@ phone_confidence <- function(values, weight, hit, free, corroborated) {
   if (free || deliberate || filled) "medium" else "low"
 }
 
+# With the dialtone package, phone-like numbers are checked against
+# libphonenumber's numbering plans: numbers written with a country code always,
+# others against the project's `regions`. Validity is weak evidence for one
+# number (about two in three random ten-digit strings are valid Indian
+# numbers), so a rejected number stops counting, but only a column in which
+# nearly every judged number is valid moves up a grade. At 30 numbers, random
+# strings valid two times in three pass that bar about once in 2,000 columns;
+# the odds fall quickly with more.
+judge_phones <- function(hit, regions) {
+  judged <- rep(NA, length(hit))
+  if (!rlang::is_installed("dialtone")) {
+    return(judged)
+  }
+  hit <- as.character(hit)
+  present <- !is.na(hit)
+  international <- present & startsWith(hit, "+")
+  if (any(international)) {
+    judged[international] <- dialtone::phone_valid(hit[international])
+  }
+  national <- present & !international
+  if (any(national) && length(regions) > 0L) {
+    valid <- Reduce(`|`, lapply(regions, function(region) {
+      dialtone::phone_valid(hit[national], region = region)
+    }))
+    judged[national] <- valid
+  }
+  judged
+}
+
+upgrade <- function(confidence) {
+  confidence_levels[min(match(confidence, confidence_levels) + 1L, length(confidence_levels))]
+}
+
 detect_patterns <- function(values, weight, free, types = c("email", "phone", "ip_address"),
-                            corroborated = FALSE) {
+                            corroborated = FALSE, regions = character()) {
   found <- list()
   total <- sum(weight)
   threshold <- if (free) 1 else max(5, 0.05 * total)
   for (type in types) {
     hit <- matched(values, type)
+    judged <- if (type == "phone") judge_phones(hit, regions) else rep(NA, length(hit))
+    hit[judged %in% FALSE] <- NA_character_
     n <- sum(weight[!is.na(hit)])
     if (n >= threshold) {
       confidence <- if (type == "phone") {
-        phone_confidence(values, weight, hit, free, corroborated)
+        graded <- phone_confidence(values, weight, hit, free, corroborated)
+        verdicts <- judged[!is.na(judged)]
+        if (length(verdicts) >= 30L && mean(verdicts) >= 0.95) upgrade(graded) else graded
       } else {
         "high"
       }
@@ -127,7 +164,7 @@ detect_person_names <- function(values, weight) {
   list(finding("person_name", "value", "person_name", sum(weight[named]), share, values, "low"))
 }
 
-detect_values <- function(field, values, weight) {
+detect_values <- function(field, values, weight, regions = character()) {
   if (length(values) == 0L || field$type == "logical") {
     return(list())
   }
@@ -140,7 +177,7 @@ detect_values <- function(field, values, weight) {
   }
   if (field$type == "numeric") {
     return(c(
-      detect_patterns(values, weight, FALSE, "phone", phone_named),
+      detect_patterns(values, weight, FALSE, "phone", phone_named, regions),
       detect_identity_numbers(values, weight)
     ))
   }
@@ -149,7 +186,9 @@ detect_values <- function(field, values, weight) {
   wordy <- stats::weighted.mean(words, weight) >= 5
   free <- field$kind == "text" || (wordy && distinct >= 0.3)
   # Sentences are searched match by match even when most rows repeat a stock answer.
-  found <- detect_patterns(values, weight, free || wordy, corroborated = phone_named)
+  found <- detect_patterns(values, weight, free || wordy,
+    corroborated = phone_named, regions = regions
+  )
   if (field$kind == "text") {
     return(found)
   }

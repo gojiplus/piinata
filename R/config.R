@@ -62,6 +62,7 @@ check_pattern <- function(pattern, path) {
 #'     confidence: high
 #' terms:
 #'   person_name: [mukhiya]
+#' regions: [IN]
 #' min_confidence: medium
 #' sample: 10000
 #' ```
@@ -69,7 +70,10 @@ check_pattern <- function(pattern, path) {
 #' An `allow` entry names a `field`, a `type` of finding, a `source` glob, or
 #' any combination, and must give a `reason`. Custom `patterns` are regular
 #' expressions tried on values; `terms` add words to the vocabulary used on
-#' field names and labels.
+#' field names and labels. `regions` names the countries whose numbering plans
+#' judge phone numbers written without a country code, as two-letter codes
+#' (see `dialtone::phone_regions()`); it is used when the 'dialtone' package
+#' is installed.
 #'
 #' @param path The configuration file. A missing file gives an empty
 #'   configuration.
@@ -82,7 +86,7 @@ check_pattern <- function(pattern, path) {
 pii_config <- function(path = ".piinata.yml") {
   config <- list(
     allow = list(), ignore = character(), patterns = list(), terms = list(),
-    min_confidence = NULL, sample = NULL, path = path
+    regions = character(), min_confidence = NULL, sample = NULL, path = path
   )
   if (!fs::file_exists(path)) {
     return(structure(config, class = "pii_config"))
@@ -104,7 +108,22 @@ pii_config <- function(path = ".piinata.yml") {
     )
   }
   config$sample <- raw$sample
+  config$regions <- check_regions(toupper(as.character(unlist(raw$regions))), path)
   structure(config, class = "pii_config")
+}
+
+check_regions <- function(regions, path) {
+  if (length(regions) == 0L || !rlang::is_installed("dialtone")) {
+    return(regions)
+  }
+  unknown <- setdiff(regions, dialtone::phone_regions()$region)
+  if (length(unknown) > 0L) {
+    cli::cli_abort(c(
+      "{cli::qty(length(unknown))}Unknown region{?s} {.val {unknown}} in {.file {path}}.",
+      "i" = "{.fn dialtone::phone_regions} lists the two-letter codes."
+    ))
+  }
+  regions
 }
 
 allowed_by <- function(findings, rules) {

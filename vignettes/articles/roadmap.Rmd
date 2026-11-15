@@ -53,15 +53,19 @@ remove.
 | 0.3.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports; file-name scanning | |
 | 0.4.0 | pre-commit hook and GitHub Action | |
 | 0.5.0 | optional backends: Presidio, `nametagger`; comparison vignette | |
-| 0.6.0 | phone validation on libphonenumber metadata; URL parts | |
+| | phone validation with `dialtone` and a `regions` setting | done |
+| 0.6.0 | URL parts | |
 
 ## Open questions
 
-1. **Phone numbers.** No maintained, Java-free libphonenumber exists on CRAN:
-   `dialvalidator` was archived on 2026-03-30 and `dialr` (2023) needs Java.
-   The core flags digit strings of 10 to 13 digits as `phone`, confidence
-   low. Decided: build our own validator on Google's libphonenumber metadata
-   (Apache-2.0), credited, likely in the sister package below.
+1. **Phone numbers.** Decided and built: no maintained, Java-free
+   libphonenumber existed on CRAN (`dialvalidator` was archived on 2026-03-30
+   and `dialr` needs Java), so the sister package
+   [dialtone](https://github.com/gojiplus/dialtone) validates numbers on
+   Google's libphonenumber metadata (Apache-2.0). piinata uses it when
+   installed: numbers with a country code are always checked, others against
+   the project's `regions`; a rejected number stops counting, and a column of
+   valid numbers moves up a grade.
 2. **National ids.** Decided and built: the sister package
    [idcheck](https://github.com/gojiplus/idcheck) validates identity numbers in
    C++ (Aadhaar by Verhoeff checksum, GSTIN by checksum, PAN, voter id,

@@ -6,3 +6,6 @@
 ^\.codespellrc$
 ^vignettes/articles$
 ^docs$
+^cran-comments\.md$
+^research_notes$
+^reports$

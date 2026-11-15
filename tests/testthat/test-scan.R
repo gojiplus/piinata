@@ -148,3 +148,50 @@ test_that("numbers written as phone numbers need no other support", {
   expect_equal(phone_grade(data.frame(q7 = sprintf("(415) 555-%04d ext", 1:20))), "medium")
   expect_equal(phone_grade(data.frame(q7 = sprintf("+44 20 7946 %04d", 1:20))), "medium")
 })
+
+with_regions <- function(regions) {
+  path <- withr::local_tempfile(fileext = ".yml", .local_envir = parent.frame())
+  writeLines(paste0("regions: [", paste(regions, collapse = ", "), "]"), path)
+  pii_config(path)
+}
+
+phone_grade_in <- function(data, config) {
+  findings <- pii_scan(data, config = config)
+  findings$confidence[findings$type == "phone" & findings$evidence == "value"]
+}
+
+test_that("numbers valid in the project's region move up a grade", {
+  skip_if_not_installed("dialtone")
+  mobiles <- sprintf("98%08d", seq(1234567, by = 7919, length.out = 60))
+  expect_equal(phone_grade_in(data.frame(q13 = mobiles), pii_config("none.yml")), "low")
+  expect_equal(phone_grade_in(data.frame(q13 = mobiles), with_regions("IN")), "medium")
+})
+
+test_that("random ten-digit identifiers do not move up", {
+  skip_if_not_installed("dialtone")
+  withr::local_seed(1)
+  ids <- sprintf("%010.0f", stats::runif(200, 1e9, 1e10))
+  expect_equal(phone_grade_in(data.frame(q7 = ids), with_regions("IN")), "low")
+})
+
+test_that("numbers the numbering plan rejects are not phones", {
+  skip_if_not_installed("dialtone")
+  road <- paste("The road near house", 1:30, "is bad after the rains this year")
+  note <- data.frame(note = c(road, "ref 0123456789"))
+  phones <- function(config) sum(pii_scan(note, config = config)$type == "phone")
+  expect_equal(phones(pii_config("none.yml")), 1L)
+  expect_equal(phones(with_regions("IN")), 0L)
+})
+
+test_that("international numbers are judged without a region", {
+  skip_if_not_installed("dialtone")
+  valid <- sprintf("+44 20 7946 %04d", 1:40)
+  expect_equal(phone_grade_in(data.frame(q7 = valid), pii_config("none.yml")), "high")
+})
+
+test_that("an unknown region is an error", {
+  skip_if_not_installed("dialtone")
+  path <- withr::local_tempfile(fileext = ".yml")
+  writeLines("regions: [XX]", path)
+  expect_error(pii_config(path), "Unknown region")
+})

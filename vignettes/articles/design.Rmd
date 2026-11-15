@@ -42,7 +42,8 @@ and they judge a column by its name, so an email address in a column called
    asked for. The core makes no network calls.
 6. **A small core, optional backends.** The core installs with no Python, no
    Java and no system libraries beyond what its imports need. Heavier
-   detectors (Presidio, named-entity models, libphonenumber) are opt-in.
+   detectors (Presidio, named-entity models) are opt-in, and the sister
+   packages `idcheck` and `dialtone` are used when installed.
 
 ## Pipeline
 
@@ -134,7 +135,7 @@ A detector is a function from a field to zero or more findings. The core set:
 | value | IP address | `ipaddress` for validation |
 | value | date of birth: parseable dates in a plausible birth range | `lubridate` |
 | value | coordinates: numeric latitude/longitude pairs in range | base R |
-| value | phone numbers | see open questions |
+| value | phone numbers: 10 to 13 digits, graded by how they are written and how much of a column they fill; checked against libphonenumber's numbering plans for the project's `regions` | `dialtone`, when installed |
 | structure | identifier-like: nearly all values distinct | base R |
 | structure | free text: long, varied strings; value detectors then run cell by cell | base R |
 
@@ -148,7 +149,6 @@ Optional backends, each behind one function and one suggested package:
 |---|---|---|
 | `use_presidio()` | person names, locations, India ids (Aadhaar, PAN, voter id), phones with region rules, in free text and columns | `reticulate`; Python packages declared with `py_require()` |
 | `use_nametagger()` | person and place names without Python | `nametagger` |
-| `use_dialr()` | phone validation against libphonenumber | `dialr`, Java |
 
 ## Output
 

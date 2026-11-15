@@ -24,6 +24,11 @@
   (delimited text, Excel, Stata, SPSS, SAS transport, R data, Parquet and
   plain text) and reports on every file, including the ones it cannot write
   back and the fields left below the confidence threshold.
+* Phone-like numbers are checked against libphonenumber's numbering plans
+  when the 'dialtone' package is installed: always for numbers with a country
+  code, and for others against the new `regions` setting in `.piinata.yml`.
+  A rejected number stops counting; a column in which at least 95% of 30 or
+  more judged numbers are valid moves up a grade.
 * `pii_ignore_originals()` adds the originals of redacted files to
   `.gitignore`, one rule per file, checks each rule with `git check-ignore`,
   and reports originals already tracked and copies an existing rule hides.

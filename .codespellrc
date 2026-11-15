@@ -1,4 +1,4 @@
 [codespell]
 builtin = clear,rare,en-GB_to_en-US
-skip = *.pdf,*.png,*.parquet,*.rds,*.RData,*.dta,*.xlsx,./docs,./man,./R/terms.R
+skip = *.pdf,*.png,*.parquet,*.rds,*.RData,*.dta,*.xlsx,./docs,./man,./R/terms.R,./research_notes,./reports
 ignore-words-list = sav,labelled,nd,alow

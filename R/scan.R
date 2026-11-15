@@ -29,7 +29,7 @@ scan_field <- function(field, show_values, sample, config) {
   }
   found <- c(
     named,
-    detect_values(field, observed$values, observed$weight),
+    detect_values(field, observed$values, observed$weight, config$regions),
     detect_custom(field, observed$values, observed$weight, config$patterns)
   )
   if (length(found) == 0L) {
