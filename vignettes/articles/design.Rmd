@@ -214,8 +214,17 @@ A scan must be cheap enough to run on every commit.
    and dates: every planted item found, located to page or line.
 3. **Read report.** A folder holding one unreadable file and one unsupported
    file yields two rows saying so, and the scan still completes.
-4. **A second opinion.** Presidio run on the same benchmark; disagreements are
-   listed in a vignette, not hidden.
+4. **A second opinion.** Presidio 2.2.366 with its default English pipeline
+   (spaCy `en_core_web_lg`), run on the same benchmark by `score_presidio.py`.
+   Judged as presidio-structured judges, by any detection in a column, it
+   catches 15 of 17 personal columns with 9 false alarms among 25; requiring
+   half the rows, 10 of 17 with 4. Its errors are instructive. spaCy reads
+   crop varieties (86% of rows), village names (81%) and scheme names (59%)
+   as people. Its phone recognizer scores a match 0.4, below the usual 0.5
+   cut, and relies on a word such as "phone" within five words before the
+   number to add 0.35, so in a table cell, where no such word is near and
+   the column's name is not passed, no phone number is found; `+91` numbers
+   come out as dates. It sees 3% of the Devanagari names.
 5. **Real data.** Scans of real project folders, compared by hand. The first,
    a folder of election and survey files, cut flagged fields from 465 to 251
    by showing where the rules were loose (place names read as person names,
