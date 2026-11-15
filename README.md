@@ -165,24 +165,30 @@ reported as unsupported with a note to save them as docx.
 
 ## How it compares
 
-On the benchmark in `data-raw/benchmark/`, a synthetic survey of 46 columns
-with Indian and US data, 20 of them personal and 26 not, among them decoys
-chosen to look personal (village, crop, scheme, business and street names,
-nine-digit order numbers):
+On real web tables that neither project wrote: the test split of
+[SOTAB](https://webdatacommons.org/structureddata/sotab/v2/), 1,799 columns
+of Common Crawl tables labeled with Schema.org types, 217 of them names,
+phones, emails, addresses or coordinates, the rest products, books, places,
+businesses, prices and the like. Tables have no headers, so values alone
+decide. piinata was tuned on the validation split and scored once on test;
+Presidio is shown in its best configuration.
 
-| Scanner | Personal columns found | False alarms |
-|---|---|---|
-| Microsoft Presidio 2.2.366, a column flagged on any detection, as presidio-structured does | 18 of 20 | 10 of 26 |
-| Presidio, a column flagged when half its rows are | 13 of 20 | 4 of 26 |
-| piinata, at the `medium` level `pii_check()` gates on | 15 of 20 | 0 of 26 |
-| piinata with `use_gliner()` | 18 of 20 | 0 of 26 |
+| Scanner | Personal columns found | False alarms | F1 |
+|---|---|---|---|
+| Microsoft Presidio 2.2.366, GLiNER, organizations not counted | 137 of 217 | 293 of 1,582 | 0.42 |
+| Presidio, spaCy `en_core_web_lg`, locations not counted | 81 of 217 | 99 of 1,582 | 0.41 |
+| piinata, rules only | 106 of 217 | 80 of 1,582 | 0.53 |
+| piinata with `use_gliner()` | 155 of 217 | 86 of 1,582 | 0.68 |
 
-Presidio's spaCy model reads crop varieties, village and scheme names as
-people, and its phone recognizer needs a word such as "phone" just before
-the number, which a table cell never has. The scripts are
-`score_piinata.R`, `score_gliner.R` and `score_presidio.py`. The benchmark
-was written by the same hand as the detectors, so it is a stress test, not
-an estimate for your data.
+Presidio finds more person names: its named-entity model looks at every
+value, and GLiNER tags nearly every title, place and business as a person,
+place or organization, which is also where its false alarms come from.
+piinata asks the model only about columns its rules leave uncertain and
+judges a column by the share of rows, and its phone and email rules work
+without a word such as "phone" beside the number, which Presidio's need.
+Neither finds latitude and longitude kept in separate columns. The protocol,
+the label choices and the caveats are in
+[`data-raw/benchmark/external/`](https://github.com/gojiplus/piinata/tree/main/data-raw/benchmark/external).
 
 Several ideas come from Presidio and are credited where they are used: a
 value finding gains confidence when context agrees (for a column, its name

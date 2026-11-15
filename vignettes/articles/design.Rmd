@@ -217,16 +217,25 @@ A scan must be cheap enough to run on every commit.
    names read as person names; order numbers shaped like SSNs, which no rule
    can tell from SSNs without a column name). With `use_gliner()` it catches
    18 of 20 at `medium` with no false alarms, missing the names in Devanagari
-   and the SSNs behind a question number (`score_gliner.R`; the 80% cut for
-   `medium` was set on this benchmark, so real folders are the test that
-   counts). The Qualtrics export: 6 of 9
+   and the SSNs behind a question number (`score_gliner.R`; the 70% cut for
+   `medium` was set on SOTAB's validation split, below). The Qualtrics export: 6 of 9
    at `medium`, 9 of 9 at `low`. The same file in csv, dta, xlsx, parquet, tsv
    and ndjson must give the same findings.
 2. **Benchmark, text.** A txt, a docx and a pdf with planted emails, phones
    and dates: every planted item found, located to page or line.
 3. **Read report.** A folder holding one unreadable file and one unsupported
    file yields two rows saying so, and the scan still completes.
-4. **A second opinion.** Presidio 2.2.366 with its default English pipeline
+4. **An outside benchmark.** SOTAB's real web tables, scored as described in
+   `data-raw/benchmark/external/README.md`: tuned on validation, scored once
+   on test. On test piinata finds 106 of 217 personal columns with 80 false
+   alarms among 1,582 (F1 0.53), and 155 with 86 with `use_gliner()` (F1
+   0.68). Presidio's best configurations reach F1 0.42 (GLiNER, organizations
+   not counted: 137 found, 293 false alarms) and 0.41 (spaCy, locations not
+   counted: 81 found, 99 false alarms). The validation split taught most of
+   what the synthetic benchmark could not: obfuscated emails, dotted phones,
+   year spans, ordinals, digits in URLs, address cues far apart, and that a
+   column of past dates is not evidence of birth dates.
+5. **A second opinion on the synthetic benchmark.** Presidio 2.2.366 with its default English pipeline
    (spaCy `en_core_web_lg`), run on the same benchmark by `score_presidio.py`.
    Judged as presidio-structured judges, by any detection in a column, it
    catches 18 of 20 personal columns with 10 false alarms among 26; requiring
@@ -237,13 +246,13 @@ A scan must be cheap enough to run on every commit.
    number to add 0.35, so in a table cell, where no such word is near and
    the column's name is not passed, no phone number is found; `+91` numbers
    come out as dates. It sees 3% of the Devanagari names.
-5. **Real data.** Scans of real project folders, compared by hand. The first,
+6. **Real data.** Scans of real project folders, compared by hand. The first,
    a folder of election and survey files, cut flagged fields from 465 to 251
    by showing where the rules were loose (place names read as person names,
    precise numbers as coordinates, keys as text), and found a column of real
    mobile numbers. The benchmark and the detectors were written by the same
    hand, so real folders are the check that counts.
-6. `R CMD check --as-cran` clean on the five r-canon platforms with no
+7. `R CMD check --as-cran` clean on the five r-canon platforms with no
    optional backend installed. Examples and tests run offline in seconds.
 
 The benchmark is adversarial by construction, so its false-alarm rate is a

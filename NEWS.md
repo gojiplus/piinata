@@ -60,6 +60,10 @@
   ("21st") no longer look like phones and streets; address cues must sit
   within 40 characters of each other; and a birth date read from values alone
   is `low` until the column's name agrees.
+* The README compares piinata and Presidio on SOTAB, real web tables neither
+  wrote: F1 0.68 for piinata with `use_gliner()` against 0.42 for Presidio's
+  best configuration, on a test split scored once. Scripts and protocol are
+  in `data-raw/benchmark/external/`.
 * `pii_ignore_originals()` adds the originals of redacted files to
   `.gitignore`, one rule per file, checks each rule with `git check-ignore`,
   and reports originals already tracked and copies an existing rule hides.
