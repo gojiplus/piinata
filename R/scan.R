@@ -125,7 +125,8 @@ pii_scan <- function(x, show_values = FALSE, sample = NULL, config = pii_config(
   rows <- lapply(seq_len(nrow(fields)), function(i) {
     scan_field(fields[i, ], show_values, sample, config)
   })
-  findings <- do.call(rbind, c(list(empty_findings()), rows))
+  across <- coordinate_findings(fields, show_values)
+  findings <- do.call(rbind, c(list(empty_findings()), rows, list(across)))
   attr(findings, "read_report") <- pii_read_report(fields)
   attr(findings, "config") <- config
   findings

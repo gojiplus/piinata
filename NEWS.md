@@ -60,6 +60,12 @@
   ("21st") no longer look like phones and streets; address cues must sit
   within 40 characters of each other; and a birth date read from values alone
   is `low` until the column's name agrees.
+* Latitude and longitude in neighboring columns are found as a pair, from
+  their values: precise numbers in range, one within ±90. Columns named as
+  rates, prices, scores and the like are never candidates. On SOTAB's test
+  tables it finds all 26 coordinate columns and no other labeled column.
+  (The design article had claimed value-based coordinates before they
+  existed.)
 * The README compares piinata and Presidio on SOTAB, real web tables neither
   wrote: F1 0.68 for piinata with `use_gliner()` against 0.42 for Presidio's
   best configuration, on a test split scored once. Scripts and protocol are

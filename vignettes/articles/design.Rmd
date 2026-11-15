@@ -142,7 +142,7 @@ A detector is a function from a field to zero or more findings. The core set:
 | value | email address | `stringr` |
 | value | IP address | `ipaddress` for validation |
 | value | date of birth: parseable dates in a plausible birth range | `lubridate` |
-| value | coordinates: numeric latitude/longitude pairs in range | base R |
+| table | coordinates: two neighboring columns of numbers in range with four or more decimals, at least one within ±90; a column named as a rate, price, score or the like is never one | base R |
 | value | addresses: two of a postcode, a house marker and an area word (street, avenue, ward, tehsil ...); postcodes for the project's `regions` | Google's address metadata, stored with the package |
 | value | identity numbers: Aadhaar, PAN, GSTIN, voter id, passport, US SSN, UK NHS, payment cards | `idcheck` |
 | value | IBANs, MAC addresses, UUIDs | `checkstring` |

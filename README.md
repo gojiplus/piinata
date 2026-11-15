@@ -148,7 +148,8 @@ reported as unsupported with a note to save them as docx.
   Spanish, French and Hindi, plus the fields Qualtrics, SurveyCTO and
   KoboToolbox add to exports.
 - **Values:** email addresses, phone-like numbers, IP addresses, dates of
-  birth, coordinates, postal addresses and person names.
+  birth, postal addresses and person names; and latitude and longitude in
+  neighboring columns.
 - **Behavior:** free-text answers, and text that is different on nearly every
   row.
 - **Names behind question numbers:** with `use_gliner()`, an optional
@@ -186,7 +187,9 @@ place or organization, which is also where its false alarms come from.
 piinata asks the model only about columns its rules leave uncertain and
 judges a column by the share of rows, and its phone and email rules work
 without a word such as "phone" beside the number, which Presidio's need.
-Neither finds latitude and longitude kept in separate columns. The protocol,
+Scanning whole tables, piinata also pairs latitude and longitude kept in
+neighboring columns: all 26 such columns in the test split, and no other
+labeled column; Presidio does not look for coordinates. The protocol,
 the label choices and the caveats are in
 [`data-raw/benchmark/external/`](https://github.com/gojiplus/piinata/tree/main/data-raw/benchmark/external).
 

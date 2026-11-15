@@ -66,6 +66,17 @@ gender_words <- function() {
   )
 }
 
+# Names of precise decimals that are not places: rates, prices, scores and
+# model output. A column so named is never half of a coordinate pair.
+not_coordinates <- function() {
+  c(
+    "rate", "rates", "fx", "exchange", "price", "cost", "amount", "income", "wage", "score",
+    "ratio", "pct", "percent", "share", "prob", "probability", "coef", "beta", "estimate",
+    "se", "sd", "mean", "variance", "weight", "wt", "height", "length", "width", "index",
+    "pvalue", "elasticity"
+  )
+}
+
 # Fields survey platforms add to every export, matched on the whole name.
 platform_terms <- function() {
   c(

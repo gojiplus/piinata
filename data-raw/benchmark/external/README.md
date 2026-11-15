@@ -38,9 +38,12 @@ so a column is judged by its values alone, the hardest case for a scanner.
   scanner can see.
 - Some SOTAB labels are wrong: three `Person/name` columns in validation hold
   blog-post titles.
-- Latitude and longitude sit in separate columns of web tables. piinata
-  recognizes coordinates as pairs, and columns are scored one at a time
-  here, so `CoordinateAT` is never found; neither does Presidio find it.
+- Latitude and longitude sit in separate columns of web tables, and
+  `score_piinata_sotab.R` scores columns one at a time, so it never finds
+  `CoordinateAT`. `score_coordinates_sotab.R` scans whole tables instead:
+  piinata pairs 11 of 13 coordinate columns in validation and 26 of 26 in
+  test, and no column with another label (0 of 1,756 and 0 of 1,825). Every
+  unlabeled column it paired in validation (69) holds coordinates.
 - Street names without a house number ("Rectory Lane, Little Bookham") are
   missed by piinata; Presidio finds some of them as LOCATION, which also
   fires on every city.
@@ -50,6 +53,7 @@ so a column is judged by its values alone, the hardest case for a scanner.
     # download and unzip CTA_validation_schemaorg.zip and CTA_test_schemaorg.zip
     python sotab.py <unzipped> <columns>
     Rscript data-raw/benchmark/external/score_piinata_sotab.R <columns>/sotab_test.jsonl piinata.csv [gliner]
+    Rscript data-raw/benchmark/external/score_coordinates_sotab.R <unzipped> test
     uv run ... python score_presidio_sotab.py <columns>/sotab_test.jsonl presidio.csv {spacy,gliner}
     python summarize.py [--without LOCATION] piinata.csv presidio.csv
 
