@@ -1,4 +1,6 @@
-# piinata (development version)
+# piinata 0.1.0
+
+First release.
 
 * `pii_read()` reads delimited text, Excel, Stata, SPSS, SAS, R data, plain
   text, Parquet, JSON, PDF, Word, RTF, HTML and Qualtrics exports into fields,

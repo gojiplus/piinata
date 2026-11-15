@@ -44,19 +44,11 @@ remove.
 
 | Version | Contents | State |
 |---|---|---|
-| 0.0.0.9000 | reading layer, normalization, core detectors, `idcheck`, speed | done |
-| | `.piinata.yml` exceptions, custom patterns, ignore globs, review and accept | done |
-| | `pii_redact()` for data frames: drop, placeholder, mask, pseudonym | done |
-| | `pii_redact_files()`: a redacted copy beside each original (planned for 0.2.0) | done |
-| | `pii_ignore_originals()`: originals out of git | done |
-| 0.1.0 | first CRAN release, after `idcheck` | |
-| 0.3.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports; file-name scanning | |
+| 0.1.0 | first release, on GitHub: reading (archives, notebooks, geographic files, databases), name, value and structure detectors, `idcheck`, `dialtone` and `checkstring`, context, addresses, coordinate pairs, review and accept, redaction of data frames and files, originals out of git, `use_gliner()`, the synthetic and SOTAB benchmarks | done |
+| 0.2.0 | CRAN, once `idcheck` and `dialtone` are there | |
+| 0.3.0 | SurveyCTO, KoboToolbox/ODK, REDCap, SurveyMonkey and Google Forms exports with their form definitions; file-name scanning | |
 | 0.4.0 | pre-commit hook and GitHub Action | |
-| | address rule; benchmark decoys and US columns; `score_piinata.R` | done |
-| | `use_gliner()`: a second look at uncertain columns | done |
-| | Presidio comparison (`score_presidio.py`, in the design article) | done |
 | 0.5.0 | names in Devanagari | |
-| | phone validation with `dialtone` and a `regions` setting | done |
 | 0.6.0 | URL parts | |
 
 ## Open questions

@@ -1,6 +1,6 @@
 Package: piinata
 Title: Find Personal Data in Research Files
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person("Gaurav", "Sood", , "gsood07@gmail.com", role = c("aut", "cre", "cph"))
 Description: Scans survey exports, statistical data files, spreadsheets

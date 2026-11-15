@@ -96,7 +96,8 @@ For files, `pii_redact_files()` writes a redacted copy beside each flagged
 one, `survey.dta` to `survey_redacted.dta`, and reports on every file:
 
 ``` r
-pii_redact_files("path/to/project", key = "a secret")
+report <- pii_redact_files("path/to/project", key = "a secret")
+report
 #> # A tibble: 4 × 4
 #>   source                 status      destination           detail
 #>   <chr>                  <chr>       <chr>                 <chr>
@@ -156,8 +157,11 @@ reported as unsupported with a note to save them as docx.
   named-entity model (Python, through reticulate) takes a second look at
   columns the rules leave uncertain, and tells person names from place
   names.
-- **Identity numbers:** Aadhaar, GSTIN, PAN and others, when the
-  [idcheck](https://github.com/gojiplus/idcheck) package is installed.
+- **Identity and account numbers:** Aadhaar, GSTIN, PAN, voter id and
+  passport numbers, US Social Security and UK NHS numbers, and payment card
+  numbers, when the [idcheck](https://github.com/gojiplus/idcheck) package
+  is installed; IBANs, MAC addresses and UUIDs when the
+  [checkstring](https://cran.r-project.org/package=checkstring) package is.
 - **Phone numbers against numbering plans:** when the
   [dialtone](https://github.com/gojiplus/dialtone) package is installed,
   numbers are checked against Google's libphonenumber metadata. Numbers
@@ -185,8 +189,8 @@ Presidio finds more person names: its named-entity model looks at every
 value, and GLiNER tags nearly every title, place and business as a person,
 place or organization, which is also where its false alarms come from.
 piinata asks the model only about columns its rules leave uncertain and
-judges a column by the share of rows, and its phone and email rules work
-without a word such as "phone" beside the number, which Presidio's need.
+judges a column by the share of rows, and its phone rule works without a
+word such as "phone" beside the number, which Presidio's needs.
 Scanning whole tables, piinata also pairs latitude and longitude kept in
 neighboring columns: all 26 such columns in the test split, and no other
 labeled column; Presidio does not look for coordinates. The protocol,
