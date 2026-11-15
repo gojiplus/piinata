@@ -32,28 +32,33 @@ read_delim_file <- function(path, delim) {
   fields_from_table(data, path)
 }
 
-# Each cell is read with its own type, so a date stays a date: read as text,
-# Excel gives a date's serial number ("29221").
-excel_cell <- function(cell) {
-  if (is.null(cell) || length(cell) == 0L || is.na(cell[[1]])) {
-    return(NA_character_)
-  }
-  value <- cell[[1]]
-  if (inherits(value, "POSIXt")) {
-    timed <- format(value, "%H:%M:%S", tz = "UTC") != "00:00:00"
-    return(format(value, if (timed) "%Y-%m-%d %H:%M:%S" else "%Y-%m-%d", tz = "UTC"))
-  }
-  as.character(value)
-}
-
+# Cells are read as text, so numbers keep their digits ("100000"); read as
+# text, Excel gives a date's serial number ("29221"), so columns readxl takes
+# for dates are read again as dates.
 read_excel_file <- function(path) {
   sheets <- readxl::excel_sheets(path)
   fields <- lapply(sheets, function(sheet) {
     data <- readxl::read_excel(
       path,
-      sheet = sheet, col_types = "list", .name_repair = "unique_quiet"
+      sheet = sheet, col_types = "text", .name_repair = "unique_quiet"
     )
-    data[] <- lapply(data, function(column) vapply(column, excel_cell, character(1)))
+    guessed <- readxl::read_excel(path, sheet = sheet, n_max = 1000, .name_repair = "unique_quiet")
+    dated <- vapply(guessed, function(column) inherits(column, "POSIXt"), logical(1))
+    if (any(dated) && ncol(guessed) == ncol(data)) {
+      types <- ifelse(dated, "date", "skip")
+      dates <- readxl::read_excel(
+        path,
+        sheet = sheet, col_types = types, .name_repair = "unique_quiet"
+      )
+      for (k in seq_along(dates)) {
+        value <- dates[[k]]
+        timed <- !is.na(value) & format(value, "%H:%M:%S", tz = "UTC") != "00:00:00"
+        text <- format(value, "%Y-%m-%d", tz = "UTC")
+        text[timed] <- format(value[timed], "%Y-%m-%d %H:%M:%S", tz = "UTC")
+        keep <- !is.na(value)
+        data[[which(dated)[k]]][keep] <- text[keep]
+      }
+    }
     fields_from_table(data, path, sheet = sheet)
   })
   do.call(rbind, fields)
@@ -127,6 +132,12 @@ read_html_file <- function(path) {
   text <- rvest::html_text2(rvest::read_html(path))
   fields_from_text(stringr::str_split(text, "\n")[[1]], path, "lines")
 }
+
+# Folders tools keep for themselves: version control, environments, caches.
+tool_folders <- c(
+  ".git", ".svn", ".hg", ".venv", "venv", ".tox", "node_modules", "__pycache__", ".mypy_cache",
+  ".pytest_cache", ".ruff_cache", ".cache", ".Rproj.user", ".quarto", ".idea", ".vscode"
+)
 
 # Scripts and logs can list rows of data; contact cards, mail, calendars and
 # transcripts are mostly personal data.

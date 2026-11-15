@@ -207,3 +207,15 @@ test_that("YAML 1.1 booleans are read as the words they are (D11)", {
   expect_equal(config$regions, c("NO", "IN"))
   expect_equal(config$terms$person_name, c("no", "yes"))
 })
+
+test_that("globs hold through a symlinked path (D9)", {
+  root <- withr::local_tempdir()
+  fs::dir_create(file.path(root, "data", "raw"))
+  utils::write.csv(data.frame(e = 1), file.path(root, "data", "raw", "a.csv"), row.names = FALSE)
+  link <- file.path(withr::local_tempdir(), "linked")
+  fs::link_create(root, link)
+  writeLines(c("ignore:", "  - data/raw/*"), file.path(root, ".piinata.yml"))
+  config <- pii_config(file.path(root, ".piinata.yml"))
+  report <- pii_read_report(pii_scan(file.path(link, "data"), config = config))
+  expect_equal(report$status, "ignored")
+})

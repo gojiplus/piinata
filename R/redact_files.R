@@ -27,6 +27,12 @@ unwritable <- c(
 # "survey.csv.gz" -> "survey_redacted.csv.gz"; an Excel file is always
 # written as xlsx.
 redacted_path <- function(path, suffix) {
+  # A dotfile's name is its type, so ".Rhistory" is copied to
+  # "_redacted.Rhistory", which reads as the same type.
+  name <- basename(path)
+  if (startsWith(name, ".") && !grepl(".", substring(name, 2L), fixed = TRUE)) {
+    return(file.path(dirname(path), paste0(suffix, name)))
+  }
   packed <- tolower(fs::path_ext(path)) %in% compression_extensions
   inner <- if (packed) fs::path_ext_remove(path) else path
   extension <- fs::path_ext(inner)
@@ -39,12 +45,18 @@ redacted_path <- function(path, suffix) {
   as.character(if (packed) paste0(out, ".", fs::path_ext(path)) else out)
 }
 
-# A file is a redacted copy when another file in the same scan would be
-# redacted to it; "survey_redacted.csv" with no "survey.csv" beside it is an
-# original.
-is_redacted_copy <- function(path, suffix, sources) {
-  others <- setdiff(sources, path)
-  any(vapply(others, redacted_path, character(1), suffix = suffix) == path)
+# A file named like a copy is taken for one, whether or not its original is
+# still there: deleting the originals and running again must not stack
+# copies. An original that happens to end in the suffix is reported as
+# skipped, so it is seen.
+is_redacted_copy <- function(path, suffix) {
+  name <- basename(path)
+  if (startsWith(name, suffix)) {
+    return(TRUE)
+  }
+  packed <- tolower(fs::path_ext(path)) %in% compression_extensions
+  inner <- if (packed) fs::path_ext_remove(path) else path
+  endsWith(fs::path_ext_remove(basename(inner)), suffix)
 }
 
 # The findings for one table of a file: a sheet of a workbook, an object in an
@@ -200,12 +212,12 @@ file_row <- function(source, status, destination = NA_character_, detail = NA_ch
   tibble::tibble(source = source, status = status, destination = destination, detail = detail)
 }
 
-redact_one <- function(source, read_status, findings, options, registry, sources, claimed) {
+redact_one <- function(source, read_status, findings, options, registry, claimed) {
   if (read_status != "read") {
     return(file_row(source, "not read", detail = paste("the scan could not read it:", read_status)))
   }
-  if (is_redacted_copy(source, options$suffix, sources)) {
-    return(file_row(source, "skipped", detail = "a redacted copy"))
+  if (is_redacted_copy(source, options$suffix)) {
+    return(file_row(source, "skipped", detail = "named as a redacted copy"))
   }
   flagged <- findings[findings$source == source, ]
   findings <- acted_on(flagged, options$min_confidence, options$config)
@@ -332,9 +344,7 @@ pii_redact_files <- function(path, findings = pii_scan(path, config = config),
   registry <- writers()
   claimed <- new.env()
   rows <- lapply(seq_len(nrow(report)), function(i) {
-    redact_one(
-      report$source[i], report$status[i], findings, options, registry, report$source, claimed
-    )
+    redact_one(report$source[i], report$status[i], findings, options, registry, claimed)
   })
   result <- do.call(rbind, c(list(file_row(character(), character())), rows))
   cli::cli_inform(c(

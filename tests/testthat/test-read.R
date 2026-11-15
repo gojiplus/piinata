@@ -122,8 +122,9 @@ test_that("hidden files are read, and .git is left out (D5)", {
   fs::dir_create(file.path(dir, ".git"))
   writeLines("ref: refs/heads/main", file.path(dir, ".git", "HEAD"))
   report <- pii_read_report(pii_read(dir))
-  expect_setequal(basename(report$source), c(".Rhistory", ".env", "notes.txt"))
-  expect_true(all(report$status == "read"))
+  expect_setequal(basename(report$source), c(".Rhistory", ".env", "notes.txt", ".git"))
+  expect_equal(report$status[basename(report$source) == ".git"], "ignored")
+  expect_true(all(report$status[basename(report$source) != ".git"] == "read"))
 })
 
 test_that("Excel dates are read as dates (D7)", {
@@ -151,4 +152,24 @@ test_that("gzip bombs are stopped before they fill the disk (D12)", {
   report <- pii_read_report(pii_read(path))
   expect_equal(report$status, "unsupported")
   expect_match(report$detail, "more than")
+})
+
+test_that("tool folders are reported as ignored, not scanned (N1)", {
+  dir <- withr::local_tempdir()
+  fs::dir_create(file.path(dir, ".venv", "lib"))
+  writeBin(as.raw(0:255), file.path(dir, ".venv", "lib", "x.so"))
+  writeLines("asha@example.org", file.path(dir, "notes.txt"))
+  report <- pii_read_report(pii_read(dir))
+  expect_equal(report$status[basename(report$source) == ".venv"], "ignored")
+  expect_false(any(report$status %in% c("unsupported", "failed")))
+})
+
+test_that("Excel numbers keep their digits (N4)", {
+  skip_if_not_installed("writexl")
+  path <- withr::local_tempfile(fileext = ".xlsx")
+  data <- data.frame(pin = c(100000, 200000, 110001), d = as.Date("1980-01-01") + 0:2)
+  writexl::write_xlsx(data, path)
+  fields <- pii_read(path)
+  expect_equal(fields$values[[1]], c("100000", "200000", "110001"))
+  expect_equal(fields$values[[2]][1], "1980-01-01")
 })

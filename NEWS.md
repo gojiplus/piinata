@@ -76,6 +76,14 @@ First release.
   configuration's `min_confidence`; card numbers in free text are found as
   `financial_account`; text files keep their line endings; and two files
   that would write the same redacted copy are both reported. Requires R 4.5.
+  A second review of those fixes led to more: a span is replaced in the raw
+  text, so a redacted line keeps its spacing, and only cells where an
+  obfuscated match survives are normalized; Excel numbers keep their digits;
+  a redacted dotfile is named `_redacted.Rhistory`, which reads as its type;
+  folders tools keep for themselves (`.git`, `.venv`, `node_modules`,
+  `.Rproj.user` and the like) are reported once each as ignored; and globs
+  hold through symlinked paths. Files named as redacted copies are skipped
+  even when their original is gone, so a re-run does not stack copies.
 * Names settled before the first release. A finding's `type` is the kind of
   personal data and `detector` the rule that matched: identity numbers are
   `government_id` with detector `idcheck:<scheme>` (was the scheme as type),

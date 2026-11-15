@@ -128,8 +128,9 @@ often carry a respondent's name. Legacy .doc files need an external converter
 and are reported as unsupported.
 
 Hidden files are read: `.Rhistory` and `.env` files hold personal data as
-often as anything. A repository's `.git` folder is left out, and macOS's
-`.DS_Store` files are reported as ignored.
+often as anything. Folders tools keep for themselves (`.git`, `.venv`,
+`node_modules`, `.Rproj.user`, caches) are reported once each as ignored,
+and macOS's `.DS_Store` files are reported as ignored.
 
 Not in the first release: images and scanned PDFs (would use `tesseract`),
 Outlook `.pst` and `.msg` files, live databases, and live survey-platform

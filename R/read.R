@@ -80,12 +80,19 @@ pii_read <- function(path, ignore = character(), root = ".") {
   }
   directory <- fs::is_dir(path)
   # Hidden files are read too: .Rhistory and .env files hold personal data
-  # as often as anything. A repository's .git folder is version control's own
-  # store, not the project's files.
-  files <- c(path[!directory], unlist(lapply(path[directory], function(d) {
+  # as often as anything. Folders that tools keep for themselves (version
+  # control, environments, caches) are reported once each as ignored.
+  listed <- lapply(path[directory], function(d) {
     found <- as.character(fs::dir_ls(d, recurse = TRUE, type = "file", all = TRUE))
-    found[!grepl("(^|/)\\.git(/|$)", as.character(fs::path_rel(found, d)))]
-  })))
+    parts <- strsplit(as.character(fs::path_rel(found, d)), "/", fixed = TRUE)
+    tool <- vapply(parts, function(p) {
+      hit <- which(p[-length(p)] %in% tool_folders)
+      if (length(hit) == 0L) NA_character_ else paste(p[seq_len(hit[1])], collapse = "/")
+    }, character(1))
+    list(files = found[is.na(tool)], tools = unique(file.path(d, stats::na.omit(tool))))
+  })
+  files <- c(path[!directory], unlist(lapply(listed, `[[`, "files")))
+  tools <- unlist(lapply(listed, `[[`, "tools"))
   files <- unique(as.character(files))
   registry <- readers()
   skipped <- matches_glob(files, ignore, root)
@@ -98,6 +105,9 @@ pii_read <- function(path, ignore = character(), root = ".") {
     }
     read_path(files[i], registry, ignore, root = root)
   }), recursive = FALSE)
+  results <- c(results, lapply(tools, function(folder) {
+    list(source = folder, fields = new_fields(), status = "ignored", detail = "a tool's own folder")
+  }))
   fields <- do.call(rbind, c(list(new_fields()), lapply(results, `[[`, "fields")))
   attr(fields, "read_report") <- tibble::tibble(
     source = vapply(results, `[[`, character(1), "source"),

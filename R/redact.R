@@ -61,10 +61,11 @@ span_patterns <- c(
 structure_types <- c("free_text", "unique_text")
 
 # Within free text only the matched spans are replaced, every one of them; the
-# rest of the answer is kept. The scan matches normalized text (entities
-# decoded, widths folded, invisible characters dropped), so a cell is
-# normalized the same way before its spans are replaced; a cell with nothing
-# to replace is left exactly as it was.
+# rest of the answer is kept as it was. Matches are replaced in the raw text.
+# The scan also matches text that is obfuscated (entities, full-width
+# letters, invisible characters); a cell where such a match survives is
+# normalized, without folding its spacing, and replaced again, which changes
+# the cell's other characters too but leaves nothing behind.
 replace_spans <- function(values, types, redact) {
   for (type in intersect(span_types, types)) {
     values <- stringr::str_replace_all(values, span_patterns[[type]], function(hit) {
@@ -76,12 +77,20 @@ replace_spans <- function(values, types, redact) {
   values
 }
 
+unfold <- function(values) {
+  values <- decode_references(values)
+  values <- stringi::stri_trans_nfkc(values)
+  values <- stringi::stri_replace_all_regex(values, "\\p{Cf}", "")
+  stringi::stri_trans_general(values, "[:Nd:] Any-Latin")
+}
+
 redact_spans <- function(values, types, redact) {
-  clean <- normalize_values(values)
-  replaced <- replace_spans(clean, types, redact)
-  touched <- !is.na(replaced) & replaced != clean
-  values[touched] <- replaced[touched]
-  values
+  replaced <- replace_spans(values, types, redact)
+  clean <- unfold(replaced)
+  marker <- function(x, type) rep("\u0001", length(x))
+  left <- !is.na(clean) & replace_spans(clean, types, marker) != clean
+  replaced[left] <- replace_spans(clean[left], types, redact)
+  replaced
 }
 
 #' Redact the fields a scan flagged
@@ -104,6 +113,11 @@ redact_spans <- function(values, types, redact) {
 #'
 #' Fields allowed in the project's configuration (see [pii_config()]) are left
 #' alone, as [pii_check()] leaves them alone.
+#'
+#' Pseudonyms are drawn from SHA-256 of the key and the value, so they are the
+#' same in every session; they take about a second per 7,000 distinct values.
+#' Different values of the same shape can collide: for n values of a shape
+#' with S possible spellings, about n^2 / 2S pairs do.
 #'
 #' Pseudonyms are for keeping analyses running, not for security. They are not
 #' encryption, and a column of pseudonyms can still identify people through

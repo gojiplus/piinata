@@ -17,7 +17,8 @@ matches_glob <- function(x, globs, root = ".") {
     return(rep(FALSE, length(x)))
   }
   inside <- sub("^([^!]*).*$", "\\1", x)
-  relative <- as.character(fs::path_rel(fs::path_abs(inside), fs::path_abs(root)))
+  real <- function(p) normalizePath(p, winslash = "/", mustWork = FALSE)
+  relative <- as.character(fs::path_rel(real(inside), real(root)))
   relative <- paste0(relative, substring(x, nchar(inside) + 1L))
   forms <- list(sub("^\\./", "", x), relative, basename(x))
   hits <- vapply(globs, function(glob) {

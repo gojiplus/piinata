@@ -56,6 +56,11 @@ such a column, such as a name inside an answer, is left in place.
 Fields allowed in the project's configuration (see \code{\link[=pii_config]{pii_config()}}) are left
 alone, as \code{\link[=pii_check]{pii_check()}} leaves them alone.
 
+Pseudonyms are drawn from SHA-256 of the key and the value, so they are the
+same in every session; they take about a second per 7,000 distinct values.
+Different values of the same shape can collide: for n values of a shape
+with S possible spellings, about n^2 / 2S pairs do.
+
 Pseudonyms are for keeping analyses running, not for security. They are not
 encryption, and a column of pseudonyms can still identify people through
 what surrounds it. Anyone who knows the \code{key} can test whether a guessed

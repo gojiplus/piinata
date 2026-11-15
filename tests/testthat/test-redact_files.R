@@ -111,11 +111,31 @@ test_that("text files keep their line endings (C2)", {
   expect_equal(rawToChar(readBin(report$destination, "raw", 100)), "Mail <EMAIL>\r\nDone.\r\n")
 })
 
-test_that("an original named like a copy is redacted when no original sits beside it (C5)", {
+test_that("copies are skipped and reported even when their originals are gone (N5)", {
   dir <- withr::local_tempdir()
-  readr::write_csv(people(), file.path(dir, "survey_redacted.csv"))
+  readr::write_csv(people(), file.path(dir, "survey.csv"))
+  suppressMessages(pii_redact_files(dir))
+  file.remove(file.path(dir, "survey.csv"))
+  again <- suppressMessages(pii_redact_files(dir))
+  expect_equal(again$status, "skipped")
+  expect_match(again$detail, "redacted copy")
+})
+
+test_that("a redacted dotfile can be read again (N1)", {
+  dir <- withr::local_tempdir()
+  writeLines("Mail asha@example.org", file.path(dir, ".Rhistory"))
   report <- suppressMessages(pii_redact_files(dir))
-  expect_equal(report$status, "redacted")
+  expect_equal(basename(report$destination), "_redacted.Rhistory")
+  rescan <- pii_read_report(pii_read(dir))
+  expect_true(all(rescan$status == "read"))
+})
+
+test_that("redacting a span keeps the rest of the line as it was (N3)", {
+  dir <- withr::local_tempdir()
+  code <- c("def f():", "    addr = 'bob@example.org'  # keep  spacing", "    return 1")
+  writeLines(code, file.path(dir, "p.py"))
+  report <- suppressMessages(pii_redact_files(dir))
+  expect_equal(readLines(report$destination)[2], "    addr = '<EMAIL>'  # keep  spacing")
 })
 
 test_that("two files that would write the same copy are both reported (C6)", {
