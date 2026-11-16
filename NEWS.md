@@ -1,5 +1,10 @@
 # piinata (development version)
 
+* `pii_ignore_originals()` works with git built on MSYS, which prints
+  repository paths as `/d/...` that R on Windows cannot open.
+* Google Inc. is credited as the copyright holder of the bundled postcode
+  patterns, which are CC BY 4.0 (`inst/COPYRIGHTS`).
+
 # piinata 0.1.0
 
 First release.

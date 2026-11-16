@@ -49,3 +49,19 @@ test_that("files outside a repository are reported, not changed", {
   expect_equal(ignored$action, "not in a git repository")
   expect_false(fs::file_exists(file.path(dir, ".gitignore")))
 })
+
+test_that("the repository root does not depend on how git prints paths", {
+  # Git built on MSYS, as on win-builder, prints the top level as /d/temp/...,
+  # which R on Windows cannot open.
+  dir <- repository()
+  report <- suppressMessages(pii_redact_files(file.path(dir, "data")))
+  real_git <- git
+  local_mocked_bindings(git = function(root, ...) {
+    if ("--show-toplevel" %in% c(...)) {
+      return(list(ok = TRUE, out = "/d/temp/not-a-windows-path"))
+    }
+    real_git(root, ...)
+  })
+  ignored <- suppressMessages(pii_ignore_originals(report))
+  expect_equal(ignored$action, c("added", "added"))
+})

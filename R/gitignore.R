@@ -9,9 +9,17 @@ git <- function(root, ...) {
   list(ok = is.null(status) || status == 0L, out = out)
 }
 
+# --show-cdup gives the way up to the root as a relative path ("../../"), so
+# the answer does not depend on how git prints absolute paths: git built on
+# MSYS prints --show-toplevel as /d/temp/..., which R on Windows cannot open.
 git_root <- function(path) {
-  found <- git(fs::path_dir(path), "rev-parse", "--show-toplevel")
-  if (found$ok && length(found$out) == 1L) as.character(fs::path_real(found$out)) else NA_character_
+  dir <- fs::path_dir(path)
+  found <- git(dir, "rev-parse", "--show-cdup")
+  if (!found$ok || length(found$out) > 1L) {
+    return(NA_character_)
+  }
+  up <- if (length(found$out) == 0L) "" else found$out
+  as.character(fs::path_real(file.path(dir, up)))
 }
 
 # A path written as a .gitignore rule that matches that file and nothing else:
