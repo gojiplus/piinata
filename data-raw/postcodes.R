@@ -1,5 +1,6 @@
 # Postcode patterns for every country, from Google's address metadata (the
-# data behind libaddressinput, Apache-2.0), stored in R/sysdata.rda so the
+# data behind libaddressinput; its code is Apache-2.0 but the data are
+# CC BY 4.0, credited in inst/COPYRIGHTS), stored in R/sysdata.rda so the
 # scanner never goes online.
 #
 #   Rscript data-raw/postcodes.R

@@ -25,5 +25,10 @@ Authors:
   \item Gaurav Sood \email{gsood07@gmail.com} [copyright holder]
 }
 
+Other contributors:
+\itemize{
+  \item Google Inc. (postcode patterns from the Address Data Service, CC BY 4.0) [copyright holder]
+}
+
 }
 \keyword{internal}

@@ -1,0 +1,16 @@
+piinata is licensed under the MIT license (see LICENSE), except for the data
+described below.
+
+Postcode patterns (R/sysdata.rda, object `postcodes`)
+----------------------------------------------------
+
+The postal-code regular expression (`zip`) and example postal codes (`zipex`)
+for each country are taken from Google's Address Data Service,
+https://chromium-i18n.appspot.com/ssl-address/data, the metadata used by
+libaddressinput (https://github.com/google/libaddressinput). They were
+retrieved on 2026-11-14 by data-raw/postcodes.R; only these two fields are
+kept, and no value is changed.
+
+Copyright (C) Google Inc.
+Licensed under the Creative Commons Attribution 4.0 International License
+(CC BY 4.0), https://creativecommons.org/licenses/by/4.0/.

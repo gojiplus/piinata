@@ -28,8 +28,18 @@ repository's past, and stays tracked until removed with
 \verb{git rm --cached}; such files are reported with \code{is_tracked}.
 }
 \examples{
-\dontrun{
-report <- pii_redact_files("data")
+\dontshow{if (nzchar(Sys.which("git"))) withAutoprint(\{ # examplesIf}
+project <- file.path(tempdir(), "survey_project")
+dir.create(project)
+system2("git", c("init", "-q", project))
+write.csv(
+  data.frame(email = paste0("person", 1:20, "@example.org")),
+  file.path(project, "survey.csv"),
+  row.names = FALSE
+)
+report <- pii_redact_files(project)
 pii_ignore_originals(report)
-}
+readLines(file.path(project, ".gitignore"))
+unlink(project, recursive = TRUE)
+\dontshow{\}) # examplesIf}
 }

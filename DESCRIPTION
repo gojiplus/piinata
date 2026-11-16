@@ -2,7 +2,9 @@ Package: piinata
 Title: Find Personal Data in Research Files
 Version: 0.1.0.9000
 Authors@R: 
-    person("Gaurav", "Sood", , "gsood07@gmail.com", role = c("aut", "cre", "cph"))
+    c(person("Gaurav", "Sood", , "gsood07@gmail.com", role = c("aut", "cre", "cph")),
+      person("Google Inc.", role = "cph",
+             comment = "postcode patterns from the Address Data Service, CC BY 4.0"))
 Description: Scans survey exports, statistical data files, spreadsheets
     and text documents for likely personal data such as names, phone
     numbers, email addresses, dates of birth and locations. Every file is
@@ -12,6 +14,8 @@ Description: Scans survey exports, statistical data files, spreadsheets
     Flagged fields can be dropped, masked or replaced with placeholders or
     pseudonyms, in data frames or in redacted copies of the files.
 License: MIT + file LICENSE
+Copyright: See file COPYRIGHTS: the bundled postcode patterns are
+    Google Inc.'s, under CC BY 4.0.
 URL: https://gojiplus.github.io/piinata/,
     https://github.com/gojiplus/piinata
 BugReports: https://github.com/gojiplus/piinata/issues

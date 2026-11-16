@@ -42,11 +42,19 @@ is_ignored <- function(root, relative) {
 #'   or `not in a git repository`), whether the original `is_tracked`, and
 #'   `detail`.
 #' @export
-#' @examples
-#' \dontrun{
-#' report <- pii_redact_files("data")
+#' @examplesIf nzchar(Sys.which("git"))
+#' project <- file.path(tempdir(), "survey_project")
+#' dir.create(project)
+#' system2("git", c("init", "-q", project))
+#' write.csv(
+#'   data.frame(email = paste0("person", 1:20, "@example.org")),
+#'   file.path(project, "survey.csv"),
+#'   row.names = FALSE
+#' )
+#' report <- pii_redact_files(project)
 #' pii_ignore_originals(report)
-#' }
+#' readLines(file.path(project, ".gitignore"))
+#' unlink(project, recursive = TRUE)
 pii_ignore_originals <- function(report) {
   if (!is.data.frame(report) || !all(c("source", "status", "destination") %in% names(report))) {
     cli::cli_abort("{.arg report} must be the result of {.fn pii_redact_files}.")
